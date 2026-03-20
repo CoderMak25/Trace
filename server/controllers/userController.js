@@ -22,7 +22,10 @@ exports.syncUser = async (req, res) => {
 // GET /api/users/me — current user profile
 exports.getMe = async (req, res) => {
   try {
-    const user = await User.findOne({ firebaseUID: req.user.uid }).populate('savedEvents');
+    const user = await User.findOne({ firebaseUID: req.user.uid }).populate({
+      path: 'savedEvents',
+      populate: { path: 'team', select: 'name' }
+    });
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
   } catch (err) {

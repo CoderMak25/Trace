@@ -12,7 +12,7 @@ const TAG_COLORS = {
 };
 const CARD_BGS = ['bg-white', 'bg-white', 'bg-yellow'];
 
-export default function EventCard({ event, index = 0 }) {
+export default function EventCard({ event, index = 0, canEdit = false, onEdit }) {
   const blobClass = CARD_STYLES[index % 3];
   const hoverClass = HOVER_ROTATIONS[index % 3];
   const cardBg = event.category?.includes('Tech Fest') ? 'bg-yellow' : CARD_BGS[index % 3];
@@ -31,19 +31,35 @@ export default function EventCard({ event, index = 0 }) {
         <div className={`pin ${index % 3 === 0 ? 'bg-red' : 'bg-blue'}`} />
       )}
 
-      {/* Category + Bookmark */}
+      {/* Category + Actions */}
       <div className="flex justify-between items-start pt-2">
         <span className={`border-2 border-ink px-3 py-1 text-xs ${tagBg} font-heading tracking-tight inline-block ${index % 2 === 0 ? 'rotate-1' : '-rotate-1'} ${CARD_STYLES[(index + 1) % 3]}`}>
           {mainCategory}
         </span>
-        <BookmarkButton eventId={event._id} />
+        <div className="flex gap-2 relative z-10">
+          {canEdit && (
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onEdit) onEdit(event); }}
+              className="text-ink/40 hover:text-blue transition-colors p-1"
+              title="Edit Event"
+            >
+              <Icon icon="solar:pen-linear" className="text-xl" />
+            </button>
+          )}
+          <BookmarkButton eventId={event._id} />
+        </div>
       </div>
 
       {/* Title + Description */}
       <Link to={`/event/${event.slug}`} className="block">
-        <h3 className="font-heading text-3xl tracking-tight leading-none mb-2 group-hover:text-red transition-colors">
+        <h3 className="font-heading text-3xl tracking-tight leading-none mb-1 group-hover:text-red transition-colors">
           {event.name}
         </h3>
+        {event.teamName && (
+          <span className="inline-flex items-center gap-1 text-xs bg-purple-100 text-purple-600 border border-purple-300 px-2 py-0.5 rounded-full font-heading mb-2">
+            <Icon icon="solar:users-group-rounded-linear" className="text-xs" /> {event.teamName}
+          </span>
+        )}
         <p className="text-base text-ink/80 line-clamp-2">{event.description}</p>
       </Link>
 

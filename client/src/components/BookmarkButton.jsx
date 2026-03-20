@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 
 export default function BookmarkButton({ eventId }) {
-  const { currentUser, userProfile, } = useAuth();
+  const { currentUser, userProfile, setUserProfile } = useAuth();
   const [saved, setSaved] = useState(userProfile?.savedEvents?.includes(eventId) || false);
   const [animating, setAnimating] = useState(false);
 
@@ -15,13 +15,23 @@ export default function BookmarkButton({ eventId }) {
     setTimeout(() => setAnimating(false), 300);
 
     try {
-      if (currentUser.isDemo) return; // demo mode - just toggle UI
+      if (currentUser.isDemo) {
+        setUserProfile((prev) => {
+          if (!prev) return prev;
+          const newSaved = prev.savedEvents.includes(eventId)
+            ? prev.savedEvents.filter((x) => x !== eventId)
+            : [...prev.savedEvents, eventId];
+          return { ...prev, savedEvents: newSaved };
+        });
+        return;
+      }
       const token = await currentUser.getIdToken();
-      await axios.put(
+      const res = await axios.put(
         `/api/users/save/${eventId}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      setUserProfile((prev) => (prev ? { ...prev, savedEvents: res.data.savedEvents } : prev));
     } catch (err) {
       console.error('Bookmark toggle failed:', err);
       setSaved((prev) => !prev); // revert on error

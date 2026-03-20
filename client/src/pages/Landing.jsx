@@ -213,9 +213,9 @@ export default function Landing() {
                 <Icon icon="solar:users-group-rounded-linear" className="text-white text-2xl" />
               </div>
               <div>
-                <h3 className="font-heading text-3xl tracking-tight mb-2">Community Curated</h3>
+                <h3 className="font-heading text-3xl tracking-tight mb-2">Collaborative Tracking</h3>
                 <p className="text-ink/70 text-lg leading-relaxed">
-                  Anyone can submit events. Admins review & verify. A growing, crowd-sourced database of opportunities for every Indian student.
+                  Add your own events, build your tech schedule, and monitor deadlines. The ultimate personal and team tracker for every student opportunity.
                 </p>
               </div>
             </div>

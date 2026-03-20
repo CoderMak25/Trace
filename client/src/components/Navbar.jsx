@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { useAuth } from '../context/AuthContext';
 
@@ -7,6 +7,8 @@ export default function Navbar({ onSubmitClick }) {
   const { currentUser, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const showAddEventButton = location.pathname === '/dashboard' || location.pathname === '/';
 
   return (
     <header className="w-full max-w-6xl mx-auto px-6 py-6 flex flex-col md:flex-row items-center justify-between gap-4 relative z-20">
@@ -24,18 +26,22 @@ export default function Navbar({ onSubmitClick }) {
 
       {/* Desktop Nav */}
       <nav className="hidden md:flex items-center gap-8 text-lg">
-        {['Hackathons', 'Workshops', 'Tech Fests'].map((label, i) => (
+        {[
+          { label: 'Dashboard', path: '/dashboard', color: 'red' },
+          { label: 'My Teams', path: '/teams', color: 'blue' },
+          { label: 'Saved', path: '/saved', color: 'red' },
+        ].map((item, i) => (
           <button
-            key={label}
-            onClick={() => navigate('/dashboard')}
-            className={`nav-link hover:text-${i % 2 === 0 ? 'red' : 'blue'} transition-colors`}
+            key={item.label}
+            onClick={() => navigate(item.path)}
+            className={`nav-link hover:text-${item.color} transition-colors`}
           >
-            {label}
+            {item.label}
             <svg viewBox="0 0 100 20" preserveAspectRatio="none">
               <path
                 d="M0,10 Q25,20 50,10 T100,10"
                 fill="none"
-                stroke={i % 2 === 0 ? '#ff4d4d' : '#2d5da1'}
+                stroke={item.color === 'red' ? '#ff4d4d' : '#2d5da1'}
                 strokeWidth="3"
                 strokeLinecap="round"
               />
@@ -54,13 +60,15 @@ export default function Navbar({ onSubmitClick }) {
               <Icon icon="solar:users-group-rounded-linear" className="text-xl group-hover:-rotate-12 transition-transform duration-300" />
               Teams
             </Link>
-            <button
-              onClick={onSubmitClick}
-              className="bg-white border-[3px] border-ink text-ink text-lg px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:bg-red hover:text-white hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all duration-100 flex items-center gap-2 group blob-2"
-            >
-              <Icon icon="solar:add-circle-linear" className="text-xl group-hover:rotate-90 transition-transform duration-300" />
-              Submit Event
-            </button>
+            {showAddEventButton && (
+              <button
+                onClick={onSubmitClick}
+                className="bg-white border-[3px] border-ink text-ink text-lg px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:bg-red hover:text-white hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all duration-100 flex items-center gap-2 group blob-2"
+              >
+                <Icon icon="solar:add-circle-linear" className="text-xl group-hover:rotate-90 transition-transform duration-300" />
+                Add Event
+              </button>
+            )}
             <div className="relative group">
               <button className="w-10 h-10 bg-tan border-[3px] border-ink rounded-full shadow-[2px_2px_0_0_#2d2d2d] flex items-center justify-center hover:bg-blue hover:text-white transition-colors overflow-hidden">
                 {currentUser.photoURL ? (
@@ -101,9 +109,13 @@ export default function Navbar({ onSubmitClick }) {
       {/* Mobile Menu */}
       {mobileOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b-[3px] border-ink shadow-[0_4px_0_0_#2d2d2d] px-6 py-4 flex flex-col gap-4 text-lg z-50 animate-fade-in">
-          {['Hackathons', 'Workshops', 'Tech Fests'].map((label) => (
-            <button key={label} onClick={() => { navigate('/dashboard'); setMobileOpen(false); }} className="text-left hover:text-red transition-colors">
-              {label}
+          {[
+            { label: 'Dashboard', path: '/dashboard' },
+            { label: 'My Teams', path: '/teams' },
+            { label: 'Saved', path: '/saved' },
+          ].map((item) => (
+            <button key={item.label} onClick={() => { navigate(item.path); setMobileOpen(false); }} className="text-left hover:text-red transition-colors">
+              {item.label}
             </button>
           ))}
         </div>

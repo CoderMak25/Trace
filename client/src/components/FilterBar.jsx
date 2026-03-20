@@ -2,13 +2,11 @@ import { Icon } from '@iconify/react';
 
 export default function FilterBar({ filters, setFilters }) {
   const quickTags = [
-    { label: '#Mumbai', color: 'red' },
-    { label: '#AI/ML', color: 'blue' },
-    { label: '#Fintech', color: 'yellow', active: true },
-    { label: '#BeginnerFriendly', color: 'red' },
-    { label: '#Web3', color: 'blue' },
-    { label: '#Online', color: 'red' },
-    { label: '#Delhi', color: 'blue' },
+    { label: '#Online', color: 'blue' },
+    { label: '#In-Person', color: 'red' },
+    { label: '#Free', color: 'yellow', active: true },
+    { label: '#Hackathon', color: 'red' },
+    { label: '#Workshop', color: 'blue' },
   ];
 
   function handleTagClick(tag) {

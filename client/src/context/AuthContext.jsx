@@ -114,6 +114,7 @@ export function AuthProvider({ children }) {
   const value = {
     currentUser,
     userProfile,
+    setUserProfile,
     loading,
     googleSignIn,
     login,

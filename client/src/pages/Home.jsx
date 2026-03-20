@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
@@ -8,77 +8,9 @@ import SubmitEventModal from '../components/SubmitEventModal';
 import { useEvents } from '../hooks/useEvents';
 import { useAuth } from '../context/AuthContext';
 import { daysUntil, formatDate } from '../utils/dateHelpers';
+import axios from 'axios';
 
-// ─── Mini Calendar ─────────────────────────────────────
-function MiniCalendar({ events }) {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDay = new Date(year, month, 1).getDay();
-
-  const eventDates = useMemo(() => {
-    const set = new Set();
-    events.forEach((e) => {
-      const d = new Date(e.date);
-      if (d.getMonth() === month && d.getFullYear() === year) {
-        set.add(d.getDate());
-      }
-    });
-    return set;
-  }, [events, month, year]);
-
-  const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
-  const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
-  const today = new Date();
-
-  return (
-    <div className="bg-white border-[3px] border-ink p-5 shadow-[4px_4px_0_0_#2d2d2d] blob-1">
-      <div className="flex items-center justify-between mb-4">
-        <button onClick={prevMonth} className="hover:text-red transition-colors">
-          <Icon icon="solar:alt-arrow-left-linear" className="text-xl" />
-        </button>
-        <span className="font-heading text-xl tracking-tight">
-          {currentDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
-        </span>
-        <button onClick={nextMonth} className="hover:text-red transition-colors">
-          <Icon icon="solar:alt-arrow-right-linear" className="text-xl" />
-        </button>
-      </div>
-      <div className="grid grid-cols-7 gap-1 text-center text-sm">
-        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
-          <div key={d} className="text-ink/40 font-heading text-xs py-1">{d}</div>
-        ))}
-        {Array.from({ length: firstDay }).map((_, i) => (
-          <div key={`empty-${i}`} />
-        ))}
-        {Array.from({ length: daysInMonth }).map((_, i) => {
-          const day = i + 1;
-          const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
-          const hasEvent = eventDates.has(day);
-          return (
-            <div
-              key={day}
-              className={`py-1.5 text-sm relative rounded-lg transition-colors cursor-default
-                ${isToday ? 'bg-red text-white font-bold' : ''}
-                ${hasEvent && !isToday ? 'bg-yellow font-bold' : ''}
-                ${!isToday && !hasEvent ? 'hover:bg-tan/50' : ''}
-              `}
-            >
-              {day}
-              {hasEvent && <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-red" />}
-            </div>
-          );
-        })}
-      </div>
-      <div className="flex items-center gap-4 mt-3 pt-3 border-t-2 border-dashed border-ink/10 text-xs text-ink/50">
-        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red inline-block" /> Today</span>
-        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow border border-ink/20 inline-block" /> Event day</span>
-      </div>
-    </div>
-  );
-}
+import MiniCalendar from '../components/MiniCalendar';
 
 // ─── Deadline Ticker ───────────────────────────────────
 function DeadlineTicker({ events }) {
@@ -108,15 +40,61 @@ function DeadlineTicker({ events }) {
 
 // ─── Main Dashboard ────────────────────────────────────
 export default function Home() {
-  const { events, loading, filters, setFilters } = useEvents();
+  const { events, loading, filters, setFilters, addEventLocally, updateEventLocally, removeEventLocally } = useEvents();
   const { currentUser, userProfile } = useAuth();
   const [modalOpen, setModalOpen] = useState(false);
+  const [editEvent, setEditEvent] = useState(null);
   const [viewMode, setViewMode] = useState('grid'); // grid | list
+  const [teamEvents, setTeamEvents] = useState([]);
 
-  const savedEvents = events.filter((e) => userProfile?.savedEvents?.includes(e._id));
-  const upcomingCount = events.filter((e) => daysUntil(e.date) >= 0).length;
-  const onlineCount = events.filter((e) => e.mode === 'Online').length;
-  const inPersonCount = events.filter((e) => e.mode === 'In-Person').length;
+  // Fetch all team events to merge into the dashboard calendar
+  useEffect(() => {
+    async function fetchTeamEvents() {
+      try {
+        if (!currentUser || currentUser.isDemo) return;
+        const token = await currentUser.getIdToken();
+        const res = await axios.get('/api/teams', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        // Tag each event with its team name for the calendar
+        const allTeamEvts = res.data.flatMap((team) =>
+          (team.events || []).map((ev) => ({ ...ev, teamName: team.name }))
+        );
+        // Deduplicate by _id (keep first occurrence which has team name)
+        const unique = allTeamEvts.filter((te, i, arr) => arr.findIndex((x) => x._id === te._id) === i);
+        setTeamEvents(unique);
+      } catch (err) {
+        console.warn('Could not fetch team events for calendar:', err);
+      }
+    }
+    fetchTeamEvents();
+  }, [currentUser]);
+
+  // Merge personal + team events (deduplicated) for the calendar
+  const allCalendarEvents = useMemo(() => {
+    const map = new Map();
+    events.forEach((e) => map.set(e._id, e));
+    teamEvents.forEach((e) => { if (!map.has(e._id)) map.set(e._id, e); });
+    return Array.from(map.values());
+  }, [events, teamEvents]);
+
+  const handleEventSaved = (savedEvent, isEdit) => {
+    if (isEdit) updateEventLocally(savedEvent);
+    else addEventLocally(savedEvent);
+    setModalOpen(false);
+    setEditEvent(null);
+  };
+
+  const handleEventDeleted = (eventId) => {
+    removeEventLocally(eventId);
+    setModalOpen(false);
+    setEditEvent(null);
+  };
+
+  const savedEvents = allCalendarEvents.filter((e) => userProfile?.savedEvents?.includes(e._id));
+  const upcomingCount = allCalendarEvents.filter((e) => daysUntil(e.date) >= 0).length;
+  const onlineCount = allCalendarEvents.filter((e) => e.mode === 'Online').length;
+  const inPersonCount = allCalendarEvents.filter((e) => e.mode === 'In-Person').length;
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-x-hidden">
@@ -210,7 +188,13 @@ export default function Home() {
             ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {events.map((event, i) => (
-                  <EventCard key={event._id} event={event} index={i} />
+                  <EventCard 
+                    key={event._id} 
+                    event={event} 
+                    index={i} 
+                    canEdit={event.owner === userProfile?._id || userProfile?.role === 'admin'}
+                    onEdit={(e) => { setEditEvent(e); setModalOpen(true); }}
+                  />
                 ))}
               </div>
             ) : (
@@ -239,6 +223,14 @@ export default function Home() {
                         <span className="bg-yellow border-2 border-ink px-2 py-0.5 text-xs font-heading shadow-[1px_1px_0_0_#2d2d2d] blob-2">{event.prizePool}</span>
                       )}
                       <span className={`border-2 border-ink px-2 py-0.5 text-xs font-heading blob-3 ${event.mode === 'Online' ? 'bg-blue/10' : 'bg-tan'}`}>{event.mode}</span>
+                      {(event.owner === userProfile?._id || userProfile?.role === 'admin') && (
+                        <button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditEvent(event); setModalOpen(true); }}
+                          className="bg-white border-2 border-ink p-1 text-ink/40 hover:text-blue hover:shadow-[1px_1px_0_0_#2d2d2d] transition-all blob-1 ml-2"
+                        >
+                          <Icon icon="solar:pen-linear" />
+                        </button>
+                      )}
                     </div>
                   </Link>
                 ))}
@@ -248,11 +240,11 @@ export default function Home() {
 
           {/* ── Right Sidebar ── */}
           <aside className="w-full lg:w-80 shrink-0 flex flex-col gap-6">
-            {/* Calendar */}
-            <MiniCalendar events={events} />
+            {/* Calendar — shows personal + team events */}
+            <MiniCalendar events={allCalendarEvents} />
 
             {/* Deadlines */}
-            <DeadlineTicker events={events} />
+            <DeadlineTicker events={allCalendarEvents} />
 
             {/* Saved Events Quick View */}
             <div className="bg-white border-[3px] border-ink p-5 shadow-[4px_4px_0_0_#2d2d2d] blob-3">
@@ -288,7 +280,7 @@ export default function Home() {
                   onClick={() => setModalOpen(true)}
                   className="flex items-center gap-2 text-sm text-ink/70 hover:text-red transition-colors p-2 -mx-2 rounded-lg hover:bg-white/50"
                 >
-                  <Icon icon="solar:add-circle-linear" className="text-lg" /> Submit new event
+                  <Icon icon="solar:add-circle-linear" className="text-lg" /> Add new event
                 </button>
                 <Link
                   to="/profile"
@@ -321,7 +313,13 @@ export default function Home() {
         </p>
       </footer>
 
-      <SubmitEventModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
+      <SubmitEventModal 
+        isOpen={modalOpen} 
+        onClose={() => { setModalOpen(false); setEditEvent(null); }} 
+        initialData={editEvent} 
+        onSuccess={handleEventSaved} 
+        onDelete={handleEventDeleted}
+      />
     </div>
   );
 }

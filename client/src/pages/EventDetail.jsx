@@ -1,14 +1,52 @@
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Icon } from '@iconify/react';
-import { useEvents } from '../hooks/useEvents';
-import { formatDateRange, deadlineLabel } from '../utils/dateHelpers';
+import { useAuth } from '../context/AuthContext';
+import { formatDateRange, deadlineLabel, daysUntil } from '../utils/dateHelpers';
 import BookmarkButton from '../components/BookmarkButton';
 import Navbar from '../components/Navbar';
+import axios from 'axios';
 
 export default function EventDetail() {
   const { slug } = useParams();
-  const { events, loading } = useEvents();
-  const event = events.find((e) => e.slug === slug);
+  const { currentUser } = useAuth();
+  const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Sample events for demo mode
+  const DEMO_EVENTS = [
+    { _id: '1', slug: 'mumbai-hack-2024', name: 'Mumbai Hack 2024', organizer: 'Tech Club IITB', date: '2024-10-15', endDate: '2024-10-17', mode: 'In-Person', city: 'Mumbai', category: ['Hackathon', 'Fintech'], prizePool: '₹50,000', registrationLink: 'https://example.com', description: 'Build the future of finance in 48 hours.', registrationDeadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString() },
+    { _id: '2', slug: 'intro-to-rust', name: 'Intro to Rust', organizer: 'FOSS India', date: '2024-11-02', mode: 'Online', city: 'Online (Discord)', category: ['Workshop'], prizePool: 'Free', registrationLink: 'https://example.com', description: 'Memory safety without garbage collection.' },
+    { _id: '3', slug: 'synapse-24', name: "Synapse '24", organizer: 'NIT Surat', date: '2024-12-10', endDate: '2024-12-14', mode: 'In-Person', city: 'Surat', category: ['Tech Fest'], highlights: 'RoboWars, CTF', registrationLink: 'https://example.com', description: 'Annual technical festival of NIT Surat.' },
+    { _id: '4', slug: 'ai-ml-bootcamp', name: 'AI/ML Bootcamp', organizer: 'Google DSC BITS', date: '2024-11-20', endDate: '2024-11-22', mode: 'Online', city: 'Online (Google Meet)', category: ['Workshop'], prizePool: 'Free', registrationLink: 'https://example.com', description: 'Three-day intensive bootcamp.' },
+    { _id: '5', slug: 'hack-bengaluru', name: 'HackBengaluru', organizer: 'BLR Tech Community', date: '2024-12-01', endDate: '2024-12-02', mode: 'In-Person', city: 'Bengaluru', category: ['Hackathon'], prizePool: '₹1,00,000', registrationLink: 'https://example.com', description: "Bangalore's biggest open hackathon.", registrationDeadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString() },
+    { _id: '6', slug: 'devops-day-delhi', name: 'DevOps Day Delhi', organizer: 'CloudNative India', date: '2024-11-15', mode: 'In-Person', city: 'Delhi', category: ['Workshop'], prizePool: '₹500', registrationLink: 'https://example.com', description: 'Kubernetes, CI/CD pipelines, and observability.' },
+  ];
+
+  useEffect(() => {
+    async function fetchEvent() {
+      setLoading(true);
+      try {
+        if (currentUser?.isDemo) {
+          const found = DEMO_EVENTS.find((e) => e.slug === slug);
+          setEvent(found || null);
+          setLoading(false);
+          return;
+        }
+        const token = await currentUser.getIdToken();
+        const res = await axios.get(`/api/events/${slug}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setEvent(res.data);
+      } catch (err) {
+        console.error('Failed to load event:', err);
+        setEvent(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+    if (currentUser) fetchEvent();
+  }, [slug, currentUser]);
 
   if (loading) {
     return (
@@ -36,6 +74,7 @@ export default function EventDetail() {
   }
 
   const deadline = deadlineLabel(event.registrationDeadline);
+  const isMultiDay = event.endDate && event.endDate !== event.date;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -58,11 +97,16 @@ export default function EventDetail() {
           {/* Header */}
           <div className="flex justify-between items-start mb-6 pt-2">
             <div className="flex flex-wrap gap-2">
-              {event.category?.map((cat) => (
+              {(Array.isArray(event.category) ? event.category : [event.category]).filter(Boolean).map((cat) => (
                 <span key={cat} className="border-2 border-ink px-3 py-1 text-xs bg-tan font-heading tracking-tight blob-2">
                   {cat}
                 </span>
               ))}
+              {event.mode && (
+                <span className={`border-2 border-ink px-3 py-1 text-xs font-heading tracking-tight blob-3 ${event.mode === 'Online' ? 'bg-blue/10' : event.mode === 'Hybrid' ? 'bg-yellow' : 'bg-tan'}`}>
+                  {event.mode}
+                </span>
+              )}
             </div>
             <BookmarkButton eventId={event._id} />
           </div>
@@ -71,7 +115,9 @@ export default function EventDetail() {
           <h1 className="font-heading text-4xl md:text-5xl tracking-tight text-ink mb-4">{event.name}</h1>
 
           {/* Description */}
-          <p className="text-xl text-ink/80 mb-8 leading-relaxed">{event.description}</p>
+          {event.description && (
+            <p className="text-xl text-ink/80 mb-8 leading-relaxed">{event.description}</p>
+          )}
 
           {/* Details Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
@@ -81,17 +127,30 @@ export default function EventDetail() {
             </div>
             <div className="flex items-center gap-3 text-lg">
               <Icon icon="solar:calendar-linear" className="text-2xl text-red shrink-0" />
-              <div><span className="text-ink/60 text-sm block">Date</span>{formatDateRange(event.date, event.endDate)}</div>
+              <div>
+                <span className="text-ink/60 text-sm block">{isMultiDay ? 'Duration' : 'Date'}</span>
+                {formatDateRange(event.date, event.endDate)}
+              </div>
             </div>
             <div className="flex items-center gap-3 text-lg">
               <Icon icon="solar:map-point-linear" className="text-2xl text-blue shrink-0" />
-              <div><span className="text-ink/60 text-sm block">Location</span>{event.city} / {event.mode}</div>
+              <div><span className="text-ink/60 text-sm block">Location</span>{event.city || 'TBD'} / {event.mode}</div>
             </div>
             <div className="flex items-center gap-3 text-lg">
               <Icon icon="solar:cup-star-linear" className="text-2xl text-red shrink-0" />
-              <div><span className="text-ink/60 text-sm block">Prize Pool</span>{event.prizePool || 'Free'}</div>
+              <div><span className="text-ink/60 text-sm block">Prize / Cost</span>{event.prizePool || event.highlights || 'Free'}</div>
             </div>
           </div>
+
+          {/* Registration Status */}
+          {event.registered !== undefined && (
+            <div className="mb-6">
+              <div className={`inline-flex items-center gap-2 border-[3px] border-ink px-4 py-2 font-heading text-lg shadow-[3px_3px_0_0_#2d2d2d] blob-2 ${event.registered ? 'bg-green-100 text-green-800' : 'bg-yellow text-ink'}`}>
+                <Icon icon={event.registered ? 'solar:check-circle-bold' : 'solar:clock-circle-linear'} />
+                {event.registered ? 'Registered ✓' : 'Not Registered'}
+              </div>
+            </div>
+          )}
 
           {/* Deadline Badge */}
           {deadline && (

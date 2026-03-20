@@ -7,16 +7,19 @@ import { useAuth } from '../context/AuthContext';
 import { useEvents } from '../hooks/useEvents';
 import { formatDate, daysUntil } from '../utils/dateHelpers';
 import axios from 'axios';
+import MiniCalendar from '../components/MiniCalendar';
+import SubmitEventModal from '../components/SubmitEventModal';
 
 export default function TeamDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
   const { events: allEvents } = useEvents();
   const [team, setTeam] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showCode, setShowCode] = useState(false);
-  const [showAddEvent, setShowAddEvent] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editEvent, setEditEvent] = useState(null);
   const [copied, setCopied] = useState(false);
 
   // Demo team
@@ -58,24 +61,31 @@ export default function TeamDetail() {
     loadTeam();
   }, [id, currentUser, allEvents]);
 
-  async function addEventToTeam(eventId) {
-    try {
-      if (currentUser?.isDemo) {
-        const ev = allEvents.find((e) => e._id === eventId);
-        if (ev) setTeam((prev) => ({ ...prev, events: [...prev.events, ev] }));
-        setShowAddEvent(false);
-        return;
-      }
-      const token = await currentUser.getIdToken();
-      const res = await axios.put(`/api/teams/${id}/add-event`, { eventId }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setTeam(res.data);
-      setShowAddEvent(false);
-    } catch (err) {
-      console.error(err);
+  // Refresh team manually after adding an event
+  const handleEventSaved = (savedEvent, isEdit) => {
+    setModalOpen(false);
+    setEditEvent(null);
+    if (isEdit) {
+      setTeam((prev) => ({
+        ...prev,
+        events: prev.events.map((e) => (e._id === savedEvent._id ? savedEvent : e)),
+      }));
+    } else {
+      setTeam((prev) => ({
+        ...prev,
+        events: [...prev.events, savedEvent],
+      }));
     }
-  }
+  };
+
+  const handleEventDeleted = (eventId) => {
+    setModalOpen(false);
+    setEditEvent(null);
+    setTeam((prev) => ({
+      ...prev,
+      events: prev.events.filter((e) => (e._id || e) !== eventId),
+    }));
+  };
 
   async function removeEvent(eventId) {
     try {
@@ -122,12 +132,7 @@ export default function TeamDetail() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  // Events not yet in team schedule
-  const availableEvents = useMemo(() => {
-    if (!team) return [];
-    const teamEventIds = team.events.map((e) => e._id || e);
-    return allEvents.filter((e) => !teamEventIds.includes(e._id));
-  }, [allEvents, team]);
+  // Remove availableEvents computation that was used for inline picker
 
   // Team schedule sorted by date
   const schedule = useMemo(() => {
@@ -195,7 +200,7 @@ export default function TeamDetail() {
               </button>
               {/* Add Event */}
               <button
-                onClick={() => setShowAddEvent(!showAddEvent)}
+                onClick={() => setModalOpen(true)}
                 className="bg-red border-[3px] border-ink text-white px-4 py-2 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-1 flex items-center gap-2 font-heading text-sm"
               >
                 <Icon icon="solar:add-circle-linear" /> Add Event
@@ -239,31 +244,6 @@ export default function TeamDetail() {
               <span className="text-ink/40 text-lg ml-1">({schedule.length})</span>
             </h2>
 
-            {/* Add Event Panel */}
-            {showAddEvent && (
-              <div className="bg-yellow/30 border-[3px] border-ink/20 border-dashed p-4 mb-4 blob-2 animate-fade-in">
-                <h3 className="font-heading text-lg tracking-tight mb-3">Pick an event to add:</h3>
-                {availableEvents.length === 0 ? (
-                  <p className="text-ink/50 text-sm">All events are already in your schedule!</p>
-                ) : (
-                  <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
-                    {availableEvents.map((e) => (
-                      <button
-                        key={e._id}
-                        onClick={() => addEventToTeam(e._id)}
-                        className="flex items-center gap-3 bg-white border-2 border-ink p-3 shadow-[2px_2px_0_0_#2d2d2d] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-left blob-1"
-                      >
-                        <Icon icon="solar:add-circle-linear" className="text-red text-xl shrink-0" />
-                        <div>
-                          <span className="font-heading text-base">{e.name}</span>
-                          <span className="text-ink/50 text-xs block">{e.organizer} • {formatDate(e.date)}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* Schedule */}
             {schedule.length === 0 ? (
@@ -296,13 +276,24 @@ export default function TeamDetail() {
                               <span className={`border border-ink px-2 py-0.5 text-xs font-heading ${event.mode === 'Online' ? 'bg-blue/10' : 'bg-tan'}`}>{event.mode}</span>
                             </div>
                           </Link>
-                          <button
-                            onClick={() => removeEvent(event._id)}
-                            className="text-ink/30 hover:text-red transition-colors p-1 shrink-0"
-                            title="Remove from schedule"
-                          >
-                            <Icon icon="solar:close-circle-linear" className="text-xl" />
-                          </button>
+                          <div className="flex gap-1 shrink-0">
+                            {(event.owner === userProfile?._id || userProfile?.role === 'admin') && (
+                              <button
+                                onClick={(e) => { e.preventDefault(); setEditEvent(event); setModalOpen(true); }}
+                                className="text-ink/30 hover:text-blue transition-colors p-1"
+                                title="Edit event"
+                              >
+                                <Icon icon="solar:pen-linear" className="text-xl" />
+                              </button>
+                            )}
+                            <button
+                              onClick={(e) => { e.preventDefault(); removeEvent(event._id); }}
+                              className="text-ink/30 hover:text-red transition-colors p-1"
+                              title="Remove from schedule"
+                            >
+                              <Icon icon="solar:close-circle-linear" className="text-xl" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -313,7 +304,8 @@ export default function TeamDetail() {
           </div>
 
           {/* Right: Members */}
-          <aside className="w-full lg:w-72 shrink-0">
+          <aside className="w-full lg:w-72 shrink-0 flex flex-col gap-6">
+            <MiniCalendar events={team.events} />
             <div className="bg-white border-[3px] border-ink p-5 shadow-[4px_4px_0_0_#2d2d2d] blob-3 sticky top-6">
               <h3 className="font-heading text-xl tracking-tight mb-4 flex items-center gap-2">
                 <Icon icon="solar:users-group-rounded-linear" className="text-blue" /> Members
@@ -352,6 +344,15 @@ export default function TeamDetail() {
           </aside>
         </div>
       </div>
+
+      <SubmitEventModal 
+        isOpen={modalOpen} 
+        onClose={() => { setModalOpen(false); setEditEvent(null); }} 
+        teamId={team._id}
+        initialData={editEvent} 
+        onSuccess={handleEventSaved} 
+        onDelete={handleEventDeleted}
+      />
     </div>
   );
 }

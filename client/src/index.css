@@ -146,3 +146,20 @@ dialog::backdrop {
   top: 2px;
   left: 2px;
 }
+
+/* ===== Themed Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-tan);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-ink);
+  border-radius: 4px;
+  border: 2px solid var(--color-tan);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-red);
+}
