@@ -12,7 +12,7 @@ export default function Navbar({ onSubmitClick }) {
   const showAddEventButton = location.pathname === '/dashboard' || location.pathname === '/';
 
   return (
-    <header className="w-full max-w-6xl mx-auto px-6 py-6 flex flex-col md:flex-row items-center justify-between gap-4 relative z-20">
+    <header className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6 flex items-center justify-between gap-2 relative z-20">
       <Link to={currentUser ? '/dashboard' : '/'} className="flex items-center gap-2 group">
         <div
           className="w-10 h-10 bg-red border-[3px] border-ink flex items-center justify-center shadow-[3px_3px_0_0_#2d2d2d] group-hover:rotate-6 transition-transform blob-1"
@@ -56,7 +56,7 @@ export default function Navbar({ onSubmitClick }) {
           <>
             <Link
               to="/teams"
-              className="bg-yellow border-[3px] border-ink text-ink text-lg px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:bg-blue hover:text-white hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all duration-100 flex items-center gap-2 group blob-3"
+              className="hidden md:flex bg-yellow border-[3px] border-ink text-ink text-lg px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:bg-blue hover:text-white hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all duration-100 items-center gap-2 group blob-3"
             >
               <Icon icon="solar:users-group-rounded-linear" className="text-xl group-hover:-rotate-12 transition-transform duration-300" />
               Teams
@@ -64,7 +64,7 @@ export default function Navbar({ onSubmitClick }) {
             {showAddEventButton && (
               <button
                 onClick={onSubmitClick}
-                className="bg-white border-[3px] border-ink text-ink text-lg px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:bg-red hover:text-white hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all duration-100 flex items-center gap-2 group blob-2"
+                className="hidden md:flex bg-white border-[3px] border-ink text-ink text-lg px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:bg-red hover:text-white hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all duration-100 items-center gap-2 group blob-2"
               >
                 <Icon icon="solar:add-circle-linear" className="text-xl group-hover:rotate-90 transition-transform duration-300" />
                 Add Event
@@ -94,7 +94,7 @@ export default function Navbar({ onSubmitClick }) {
         ) : (
           <Link
             to="/login"
-            className="bg-red border-[3px] border-ink text-white text-lg px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all duration-100 flex items-center gap-2 blob-1"
+            className="hidden sm:flex bg-red border-[3px] border-ink text-white text-lg px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all duration-100 items-center gap-2 blob-1"
           >
             <Icon icon="solar:login-2-linear" className="text-xl" />
             Sign In
@@ -104,7 +104,7 @@ export default function Navbar({ onSubmitClick }) {
         {/* Mobile Hamburger */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden w-10 h-10 border-[3px] border-ink flex items-center justify-center shadow-[2px_2px_0_0_#2d2d2d] blob-1"
+          className="md:hidden w-10 h-10 border-[3px] border-ink flex items-center justify-center shadow-[2px_2px_0_0_#2d2d2d] blob-1 bg-white hover:bg-yellow hover:text-ink transition-colors z-30"
         >
           <Icon icon={mobileOpen ? 'solar:close-circle-linear' : 'solar:hamburger-menu-linear'} className="text-2xl" />
         </button>
@@ -113,15 +113,33 @@ export default function Navbar({ onSubmitClick }) {
       {/* Mobile Menu */}
       {mobileOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b-[3px] border-ink shadow-[0_4px_0_0_#2d2d2d] px-6 py-4 flex flex-col gap-4 text-lg z-50 animate-fade-in">
+          {!currentUser && (
+            <Link to="/login" onClick={() => setMobileOpen(false)} className="text-red font-heading tracking-tight flex items-center gap-2 hover:translate-x-1 transition-transform">
+              <Icon icon="solar:login-2-linear" /> Sign In
+            </Link>
+          )}
+          {showAddEventButton && currentUser && (
+            <button onClick={() => { setMobileOpen(false); onSubmitClick(); }} className="text-left font-heading tracking-tight flex items-center gap-2 text-blue hover:translate-x-1 transition-transform">
+              <Icon icon="solar:add-circle-linear" /> Add Event
+            </button>
+          )}
           {[
             { label: 'Dashboard', path: '/dashboard' },
             { label: 'My Teams', path: '/teams' },
             { label: 'Saved', path: '/saved' },
+            { label: 'Profile', path: '/profile' },
           ].map((item) => (
-            <button key={item.label} onClick={() => { navigate(item.path); setMobileOpen(false); }} className="text-left hover:text-red transition-colors">
-              {item.label}
-            </button>
+            currentUser && (
+              <button key={item.label} onClick={() => { navigate(item.path); setMobileOpen(false); }} className="text-left font-heading tracking-tight hover:text-red hover:translate-x-1 transition-all flex items-center gap-2">
+                <Icon icon="solar:arrow-right-linear" className="text-ink/30" /> {item.label}
+              </button>
+            )
           ))}
+          {currentUser && (
+             <button onClick={() => { logout(); setMobileOpen(false); }} className="text-left font-heading tracking-tight text-red hover:translate-x-1 transition-transform flex items-center gap-2 mt-2 pt-2 border-t-2 border-dashed border-ink/20">
+               <Icon icon="solar:logout-2-linear" /> Logout
+             </button>
+          )}
         </div>
       )}
     </header>

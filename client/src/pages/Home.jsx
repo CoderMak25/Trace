@@ -224,12 +224,12 @@ export default function Home() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-heading text-xl tracking-tight truncate group-hover:text-red transition-colors">{event.name}</h3>
-                      <div className="flex items-center gap-3 text-sm text-ink/60 mt-0.5">
-                        <span>{event.organizer}</span>
-                        <span>•</span>
-                        <span>{formatDate(event.date)}</span>
-                        <span>•</span>
-                        <span>{event.city}</span>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink/60 mt-0.5">
+                        <span className="truncate max-w-[120px] sm:max-w-none">{event.organizer}</span>
+                        <span className="hidden sm:inline">•</span>
+                        <span className="shrink-0">{formatDate(event.date)}</span>
+                        <span className="hidden sm:inline">•</span>
+                        <span className="truncate max-w-[120px] sm:max-w-none">{event.city}</span>
                       </div>
                     </div>
                     <div className="hidden sm:flex items-center gap-2 shrink-0">

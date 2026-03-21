@@ -224,13 +224,13 @@ export default function TeamDetail() {
           {showCode && (
             <div className="mt-6 pt-4 border-t-[3px] border-dashed border-ink/10 animate-fade-in">
               <p className="text-ink/60 mb-2">Share this code with your teammates:</p>
-              <div className="flex items-center gap-3">
-                <div className="bg-tan border-[3px] border-ink px-6 py-3 text-3xl font-heading tracking-[0.3em] shadow-[3px_3px_0_0_#2d2d2d] blob-2 select-all">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div className="bg-tan border-[3px] border-ink px-6 py-3 text-3xl font-heading tracking-[0.3em] shadow-[3px_3px_0_0_#2d2d2d] blob-2 select-all text-center">
                   {team.code}
                 </div>
                 <button
                   onClick={copyCode}
-                  className={`border-[3px] border-ink px-4 py-3 shadow-[2px_2px_0_0_#2d2d2d] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-1 flex items-center gap-2 ${copied ? 'bg-green-500 text-white' : 'bg-white'}`}
+                  className={`border-[3px] border-ink px-4 py-3 shadow-[2px_2px_0_0_#2d2d2d] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-1 flex justify-center items-center gap-2 ${copied ? 'bg-green-500 text-white' : 'bg-white'}`}
                 >
                   <Icon icon={copied ? 'solar:check-circle-bold' : 'solar:copy-linear'} />
                   {copied ? 'Copied!' : 'Copy'}
@@ -272,13 +272,13 @@ export default function TeamDetail() {
                       </div>
                       {/* Event info */}
                       <div className="flex-1 bg-white border-[3px] border-ink p-4 shadow-[3px_3px_0_0_#2d2d2d] blob-1 group">
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
                           <Link to={`/event/${event.slug}`} className="flex-1 min-w-0">
                             <h3 className="font-heading text-xl tracking-tight group-hover:text-red transition-colors truncate">{event.name}</h3>
-                            <div className="flex flex-wrap items-center gap-3 text-sm text-ink/60 mt-1">
-                              <span className="flex items-center gap-1"><Icon icon="solar:users-group-rounded-linear" className="text-blue" /> {event.organizer}</span>
-                              <span className="flex items-center gap-1"><Icon icon="solar:map-point-linear" className="text-blue" /> {event.city}</span>
-                              <span className={`border border-ink px-2 py-0.5 text-xs font-heading ${event.mode === 'Online' ? 'bg-blue/10' : 'bg-tan'}`}>{event.mode}</span>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink/60 mt-1">
+                              <span className="flex items-center gap-1"><Icon icon="solar:users-group-rounded-linear" className="text-blue shrink-0" /> <span className="truncate">{event.organizer}</span></span>
+                              <span className="flex items-center gap-1"><Icon icon="solar:map-point-linear" className="text-blue shrink-0" /> <span className="truncate">{event.city}</span></span>
+                              <span className={`border border-ink px-2 py-0.5 text-xs font-heading shrink-0 ${event.mode === 'Online' ? 'bg-blue/10' : 'bg-tan'}`}>{event.mode}</span>
                             </div>
                           </Link>
                           <div className="flex gap-1 shrink-0">

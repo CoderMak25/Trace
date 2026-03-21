@@ -152,7 +152,7 @@ export default function Teams() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between mt-4 pt-3 border-t-2 border-dashed border-ink/10">
+                    <div className="flex flex-wrap items-center justify-between mt-4 pt-3 border-t-2 border-dashed border-ink/10 gap-2">
                       <div className="flex items-center gap-2 text-sm text-ink/60">
                         <Icon icon="solar:users-group-rounded-linear" className="text-blue" />
                         {team.members.length} member{team.members.length !== 1 ? 's' : ''}
@@ -161,7 +161,7 @@ export default function Teams() {
                         <Icon icon="solar:calendar-linear" className="text-red" />
                         {team.events?.length || 0} event{(team.events?.length || 0) !== 1 ? 's' : ''}
                       </div>
-                      <span className="bg-tan border-2 border-ink px-2 py-0.5 text-xs font-heading blob-2 shadow-[1px_1px_0_0_#2d2d2d]">
+                      <span className="bg-tan border-2 border-ink px-2 py-0.5 text-xs font-heading blob-2 shadow-[1px_1px_0_0_#2d2d2d] w-fit">
                         {team.code}
                       </span>
                     </div>

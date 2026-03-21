@@ -33,8 +33,8 @@ export default function FilterBar({ filters, setFilters }) {
         </div>
 
         {/* Dropdowns */}
-        <div className="flex gap-4">
-          <div className="relative min-w-[140px]">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative min-w-[140px] w-full sm:w-auto">
             <select
               value={filters.mode}
               onChange={(e) => setFilters((prev) => ({ ...prev, mode: e.target.value }))}
@@ -47,7 +47,7 @@ export default function FilterBar({ filters, setFilters }) {
             <Icon icon="solar:alt-arrow-down-linear" className="absolute right-3 top-1/2 -translate-y-1/2 text-ink pointer-events-none text-xl" />
           </div>
 
-          <div className="relative min-w-[150px]">
+          <div className="relative min-w-[150px] w-full sm:w-auto">
             <select
               value={filters.category}
               onChange={(e) => setFilters((prev) => ({ ...prev, category: e.target.value }))}
