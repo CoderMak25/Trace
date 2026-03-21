@@ -27,7 +27,8 @@ export function useNotifications(currentUser) {
   }
 
   useEffect(() => {
-    const unsub = onForegroundMessage((payload) => {
+    let unsubscribe = null;
+    onForegroundMessage((payload) => {
       setNotification({
         title: payload.notification?.title,
         body: payload.notification?.body,
@@ -35,8 +36,13 @@ export function useNotifications(currentUser) {
       });
       // Auto-clear after 5 seconds
       setTimeout(() => setNotification(null), 5000);
+    }).then((unsub) => {
+      unsubscribe = unsub;
     });
-    return unsub;
+
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
   }, []);
 
   return { fcmToken, notification, enableNotifications };

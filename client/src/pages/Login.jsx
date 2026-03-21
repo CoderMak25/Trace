@@ -22,7 +22,12 @@ export default function Login() {
       } else {
         await login(email, password);
       }
-      navigate('/dashboard');
+
+      if ('Notification' in window && Notification.permission === 'default') {
+        try { await Notification.requestPermission(); } catch (e) {}
+      }
+
+      window.location.href = '/dashboard';
     } catch (err) {
       setError(err.message?.replace('Firebase: ', '') || 'Authentication failed');
     } finally {
@@ -34,7 +39,13 @@ export default function Login() {
     setError('');
     try {
       await googleSignIn();
-      navigate('/dashboard');
+
+      // Auto-prompt Notifications on login exact moment!
+      if ('Notification' in window && Notification.permission === 'default') {
+        try { await Notification.requestPermission(); } catch (e) {}
+      }
+
+      window.location.href = '/dashboard'; // Force full mount to guarantee syncUser catches the granted state
     } catch (err) {
       setError(err.message?.replace('Firebase: ', '') || 'Google sign-in failed');
     }

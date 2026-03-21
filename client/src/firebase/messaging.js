@@ -1,14 +1,18 @@
-import { getToken, onMessage } from 'firebase/messaging';
-import { messaging } from './firebaseConfig';
+import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
+import app from './firebaseConfig';
 
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY || '';
 
 export async function requestNotificationPermission() {
   try {
-    if (!messaging) return null;
+    const supported = await isSupported();
+    if (!supported) return null;
+    const messaging = getMessaging(app);
+
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
-      const token = await getToken(messaging, { vapidKey: VAPID_KEY });
+      const swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+      const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swRegistration });
       return token;
     }
     return null;
@@ -18,8 +22,10 @@ export async function requestNotificationPermission() {
   }
 }
 
-export function onForegroundMessage(callback) {
-  if (!messaging) return () => {};
+export async function onForegroundMessage(callback) {
+  const supported = await isSupported();
+  if (!supported) return () => {};
+  const messaging = getMessaging(app);
   return onMessage(messaging, (payload) => {
     callback(payload);
   });
