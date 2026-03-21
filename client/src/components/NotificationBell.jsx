@@ -123,7 +123,7 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-[120%] w-[340px] max-h-[420px] bg-white border-[3px] border-ink shadow-[6px_6px_0_0_#2d2d2d] flex flex-col z-50 blob-1 overflow-hidden">
+        <div className="absolute right-[-60px] sm:right-[-20px] md:right-0 top-[120%] w-[300px] sm:w-[340px] max-h-[420px] bg-white border-[3px] border-ink shadow-[6px_6px_0_0_#2d2d2d] flex flex-col z-50 blob-1 overflow-hidden">
           <div className="bg-ink text-white p-3 font-heading text-lg flex justify-between items-center">
             <span>Notifications</span>
             <button onClick={() => setOpen(false)} className="hover:text-red transition-colors">
