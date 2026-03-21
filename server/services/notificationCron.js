@@ -67,7 +67,7 @@ async function sendDeadlineNotification(event, milestoneLabel) {
   const displayLabel = milestoneLabel.replace('d', ' days').replace('h', ' hours').replace('1 days', '1 day').replace('1 hours', '1 hour');
 
   const message = {
-    notification: {
+    data: {
       title: 'Registration Closing Soon! ⏰',
       body: `The deadline for ${event.name} ends in ${displayLabel}! Don't forget to register.`,
     },
@@ -77,11 +77,25 @@ async function sendDeadlineNotification(event, milestoneLabel) {
   try {
     const response = await admin.messaging().sendEachForMulticast(message);
     
+    // Auto-clean stale tokens
+    const tokensToRemove = [];
+    response.responses.forEach((resp, idx) => {
+      if (!resp.success && ['messaging/invalid-registration-token', 'messaging/registration-token-not-registered', 'messaging/unregistered'].includes(resp.error?.code)) {
+        tokensToRemove.push(tokens[idx]);
+      }
+    });
+    if (tokensToRemove.length > 0) {
+      await User.updateMany(
+        { fcmTokens: { $in: tokensToRemove } },
+        { $pull: { fcmTokens: { $in: tokensToRemove } } }
+      );
+    }
+
     const Notification = require('../models/Notification');
     const dbNotifs = targetUsers.map(u => ({
       userId: u._id,
-      title: message.notification.title,
-      body: message.notification.body,
+      title: message.data.title,
+      body: message.data.body,
       type: 'deadline_reminder',
       link: `/event/${event.slug}`
     }));

@@ -1,4 +1,4 @@
-const admin = require('../config/firebase');
+const admin = require('../config/firebaseAdmin');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 const mongoose = require('mongoose');
@@ -27,11 +27,26 @@ exports.sendToAll = async (req, res) => {
     }
 
     const message = {
-      notification: { title: title.trim(), body: body.trim() },
+      data: { title: title.trim(), body: body.trim() },
       tokens,
     };
 
     const result = await admin.messaging().sendEachForMulticast(message);
+
+    // Auto-clean stale tokens
+    const tokensToRemove = [];
+    result.responses.forEach((resp, idx) => {
+      if (!resp.success && ['messaging/invalid-registration-token', 'messaging/registration-token-not-registered', 'messaging/unregistered'].includes(resp.error?.code)) {
+        tokensToRemove.push(tokens[idx]);
+      }
+    });
+    if (tokensToRemove.length > 0) {
+      await User.updateMany(
+        { fcmTokens: { $in: tokensToRemove } },
+        { $pull: { fcmTokens: { $in: tokensToRemove } } }
+      );
+    }
+
     res.json({ sent: result.successCount, failed: result.failureCount });
   } catch (err) {
     console.error('sendToAll error:', err.message);
@@ -73,13 +88,28 @@ exports.deadlineCheck = async (req, res) => {
       if (tokens.length === 0) continue;
 
       const message = {
-        notification: {
+        data: {
           title: `⏰ Deadline Alert: ${event.name}`,
           body: `Registration closes in 3 days! Don't miss out.`,
         },
         tokens,
       };
       const result = await admin.messaging().sendEachForMulticast(message);
+
+      // Auto-clean stale tokens
+      const tokensToRemove = [];
+      result.responses.forEach((resp, idx) => {
+        if (!resp.success && ['messaging/invalid-registration-token', 'messaging/registration-token-not-registered', 'messaging/unregistered'].includes(resp.error?.code)) {
+          tokensToRemove.push(tokens[idx]);
+        }
+      });
+      if (tokensToRemove.length > 0) {
+        await User.updateMany(
+          { fcmTokens: { $in: tokensToRemove } },
+          { $pull: { fcmTokens: { $in: tokensToRemove } } }
+        );
+      }
+
       totalSent += result.successCount;
     }
 
