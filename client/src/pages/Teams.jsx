@@ -7,23 +7,6 @@ import axios from 'axios';
 
 const TEAM_COLORS = ['#ff4d4d', '#2d5da1', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
 
-// Demo teams for offline / demo mode
-const DEMO_TEAMS = [
-  {
-    _id: 't1',
-    name: 'ByteBuilders',
-    code: 'BYT3BL',
-    description: 'IIT Bombay CSE squad. We hack every weekend.',
-    color: '#ff4d4d',
-    owner: { displayName: 'Demo User', email: 'demo@trace.app' },
-    members: [
-      { displayName: 'Demo User', email: 'demo@trace.app' },
-      { displayName: 'Arjun Mehta', email: 'arjun@iitb.ac.in' },
-      { displayName: 'Priya Sharma', email: 'priya@iitb.ac.in' },
-    ],
-    events: [],
-  },
-];
 
 export default function Teams() {
   const { currentUser, userProfile } = useAuth();
@@ -43,11 +26,7 @@ export default function Teams() {
 
   async function fetchTeams() {
     try {
-      if (currentUser?.isDemo) {
-        setTeams(DEMO_TEAMS);
-        setLoading(false);
-        return;
-      }
+
       const token = await currentUser.getIdToken();
       const res = await axios.get('/api/teams', {
         headers: { Authorization: `Bearer ${token}` },
@@ -65,28 +44,12 @@ export default function Teams() {
     e.preventDefault();
     setCreating(true);
     try {
-      if (currentUser?.isDemo) {
-        const fakeTeam = {
-          _id: 't' + Date.now(),
-          name: newTeam.name,
-          code: Math.random().toString(36).substring(2, 8).toUpperCase(),
-          description: newTeam.description,
-          color: newTeam.color,
-          owner: { displayName: 'Demo User', email: 'demo@trace.app' },
-          members: [{ displayName: 'Demo User', email: 'demo@trace.app' }],
-          events: [],
-        };
-        setTeams((prev) => [fakeTeam, ...prev]);
-        setTab('my-teams');
-        setNewTeam({ name: '', description: '', color: '#ff4d4d' });
-      } else {
         const token = await currentUser.getIdToken();
         await axios.post('/api/teams', newTeam, {
           headers: { Authorization: `Bearer ${token}` },
         });
         await fetchTeams();
         setTab('my-teams');
-      }
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || 'Failed to create team. Ensure you are logged in properly.');
@@ -100,10 +63,7 @@ export default function Teams() {
     setJoinError('');
     setJoinSuccess('');
     try {
-      if (currentUser?.isDemo) {
-        setJoinSuccess('Joined team successfully! (Demo mode)');
-        return;
-      }
+
       const token = await currentUser.getIdToken();
       const res = await axios.post('/api/teams/join', { code: joinCode }, {
         headers: { Authorization: `Bearer ${token}` },

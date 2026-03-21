@@ -15,15 +15,6 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-// Demo user object for demo login
-const DEMO_USER = {
-  uid: 'demo-user-001',
-  email: 'demo@trace.app',
-  displayName: 'Demo User',
-  photoURL: null,
-  isDemo: true,
-};
-
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -33,17 +24,6 @@ export function AuthProvider({ children }) {
   // Sync user with backend
   async function syncUser(user) {
     try {
-      if (user.isDemo) {
-        setUserProfile({
-          firebaseUID: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          role: 'user',
-          savedEvents: [],
-        });
-        return;
-      }
-      
       let fcmToken = null;
       if ('Notification' in window) {
         if (Notification.permission === 'granted') {
@@ -109,24 +89,10 @@ export function AuthProvider({ children }) {
 
   function logout() {
     setUserProfile(null);
-    if (currentUser?.isDemo) {
-      setCurrentUser(null);
-      return Promise.resolve();
-    }
     return signOut(auth);
   }
 
-  function demoLogin() {
-    setCurrentUser(DEMO_USER);
-    setUserProfile({
-      firebaseUID: DEMO_USER.uid,
-      email: DEMO_USER.email,
-      displayName: DEMO_USER.displayName,
-      role: 'admin', // Demo user gets admin to see all features
-      savedEvents: [],
-    });
-    setLoading(false);
-  }
+
 
   async function requestNotificationPermission() {
     if (!('Notification' in window)) return;
@@ -158,7 +124,6 @@ export function AuthProvider({ children }) {
     login,
     signup,
     logout,
-    demoLogin,
     showNotificationPrompt,
     setShowNotificationPrompt,
     requestNotificationPermission,

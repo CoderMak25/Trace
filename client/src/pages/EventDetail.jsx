@@ -13,26 +13,11 @@ export default function EventDetail() {
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Sample events for demo mode
-  const DEMO_EVENTS = [
-    { _id: '1', slug: 'mumbai-hack-2024', name: 'Mumbai Hack 2024', organizer: 'Tech Club IITB', date: '2024-10-15', endDate: '2024-10-17', mode: 'In-Person', city: 'Mumbai', category: ['Hackathon', 'Fintech'], prizePool: '₹50,000', registrationLink: 'https://example.com', description: 'Build the future of finance in 48 hours.', registrationDeadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString() },
-    { _id: '2', slug: 'intro-to-rust', name: 'Intro to Rust', organizer: 'FOSS India', date: '2024-11-02', mode: 'Online', city: 'Online (Discord)', category: ['Workshop'], prizePool: 'Free', registrationLink: 'https://example.com', description: 'Memory safety without garbage collection.' },
-    { _id: '3', slug: 'synapse-24', name: "Synapse '24", organizer: 'NIT Surat', date: '2024-12-10', endDate: '2024-12-14', mode: 'In-Person', city: 'Surat', category: ['Tech Fest'], highlights: 'RoboWars, CTF', registrationLink: 'https://example.com', description: 'Annual technical festival of NIT Surat.' },
-    { _id: '4', slug: 'ai-ml-bootcamp', name: 'AI/ML Bootcamp', organizer: 'Google DSC BITS', date: '2024-11-20', endDate: '2024-11-22', mode: 'Online', city: 'Online (Google Meet)', category: ['Workshop'], prizePool: 'Free', registrationLink: 'https://example.com', description: 'Three-day intensive bootcamp.' },
-    { _id: '5', slug: 'hack-bengaluru', name: 'HackBengaluru', organizer: 'BLR Tech Community', date: '2024-12-01', endDate: '2024-12-02', mode: 'In-Person', city: 'Bengaluru', category: ['Hackathon'], prizePool: '₹1,00,000', registrationLink: 'https://example.com', description: "Bangalore's biggest open hackathon.", registrationDeadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString() },
-    { _id: '6', slug: 'devops-day-delhi', name: 'DevOps Day Delhi', organizer: 'CloudNative India', date: '2024-11-15', mode: 'In-Person', city: 'Delhi', category: ['Workshop'], prizePool: '₹500', registrationLink: 'https://example.com', description: 'Kubernetes, CI/CD pipelines, and observability.' },
-  ];
 
   useEffect(() => {
     async function fetchEvent() {
       setLoading(true);
       try {
-        if (currentUser?.isDemo) {
-          const found = DEMO_EVENTS.find((e) => e.slug === slug);
-          setEvent(found || null);
-          setLoading(false);
-          return;
-        }
         const token = await currentUser.getIdToken();
         const res = await axios.get(`/api/events/${slug}`, {
           headers: { Authorization: `Bearer ${token}` },

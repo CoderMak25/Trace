@@ -12,7 +12,7 @@ export function useNotifications(currentUser) {
       if (token) {
         setFcmToken(token);
         // Save to backend if logged in
-        if (currentUser && !currentUser.isDemo) {
+        if (currentUser) {
           const idToken = await currentUser.getIdToken();
           await axios.put(
             '/api/users/fcm-token',

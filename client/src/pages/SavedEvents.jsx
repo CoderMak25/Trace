@@ -7,7 +7,7 @@ import { useEvents } from '../hooks/useEvents';
 import { useAuth } from '../context/AuthContext';
 
 export default function SavedEvents() {
-  const { events } = useEvents(); // Used as fallback for demo users
+
   const { currentUser, userProfile } = useAuth();
   const [savedEvents, setSavedEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,12 +16,6 @@ export default function SavedEvents() {
   useEffect(() => {
     async function fetchSaved() {
       if (!currentUser) {
-        setLoading(false);
-        return;
-      }
-      if (currentUser.isDemo) {
-        const savedIds = userProfile?.savedEvents || [];
-        setSavedEvents(events.filter((e) => savedIds.includes(e._id)));
         setLoading(false);
         return;
       }

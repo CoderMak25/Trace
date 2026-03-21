@@ -40,7 +40,7 @@ function DeadlineTicker({ events }) {
 
 // ─── Main Dashboard ────────────────────────────────────
 export default function Home() {
-  const { events, loading, filters, setFilters, addEventLocally, updateEventLocally, removeEventLocally } = useEvents();
+  const { events, loading, loadingMore, hasMore, loadMore, filters, setFilters, addEventLocally, updateEventLocally, removeEventLocally } = useEvents();
   const { currentUser, userProfile } = useAuth();
   const [modalOpen, setModalOpen] = useState(false);
   const [editEvent, setEditEvent] = useState(null);
@@ -51,7 +51,7 @@ export default function Home() {
   useEffect(() => {
     async function fetchTeamEvents() {
       try {
-        if (!currentUser || currentUser.isDemo) return;
+        if (!currentUser) return;
         const token = await currentUser.getIdToken();
         const res = await axios.get('/api/teams', {
           headers: { Authorization: `Bearer ${token}` },
@@ -173,7 +173,7 @@ export default function Home() {
             </div>
 
             {/* Events */}
-            {loading ? (
+            {events.length === 0 && loading ? (
               <div className="flex justify-center py-20">
                 <div className="font-heading text-2xl tracking-tight text-ink/60 animate-pulse flex items-center gap-3">
                   <Icon icon="solar:refresh-linear" className="animate-spin" /> Loading events...
@@ -186,6 +186,7 @@ export default function Home() {
                 <p className="text-ink/40 mt-2">Try adjusting your filters</p>
               </div>
             ) : viewMode === 'grid' ? (
+              <>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {events.map((event, i) => (
                   <EventCard 
@@ -197,7 +198,20 @@ export default function Home() {
                   />
                 ))}
               </div>
+              {hasMore && (
+                <div className="mt-10 flex justify-center">
+                  <button 
+                    onClick={loadMore} 
+                    disabled={loadingMore} 
+                    className="bg-white border-[3px] border-ink px-8 py-3 font-heading tracking-widest uppercase hover:bg-yellow hover:-translate-y-1 transition-all shadow-[4px_4px_0_0_#2d2d2d] disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-white flex items-center gap-2 blob-2"
+                  >
+                    {loadingMore ? <><Icon icon="solar:refresh-linear" className="animate-spin" /> Loading...</> : 'Load More Events'}
+                  </button>
+                </div>
+              )}
+              </>
             ) : (
+              <>
               <div className="flex flex-col gap-3">
                 {events.map((event) => (
                   <Link
@@ -235,6 +249,18 @@ export default function Home() {
                   </Link>
                 ))}
               </div>
+              {hasMore && (
+                <div className="mt-8 flex justify-center">
+                  <button 
+                    onClick={loadMore} 
+                    disabled={loadingMore} 
+                    className="bg-white border-[3px] border-ink px-8 py-3 font-heading tracking-widest uppercase hover:bg-yellow hover:-translate-y-1 transition-all shadow-[4px_4px_0_0_#2d2d2d] disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-white flex items-center gap-2 blob-3"
+                  >
+                    {loadingMore ? <><Icon icon="solar:refresh-linear" className="animate-spin" /> Loading...</> : 'Load More Events'}
+                  </button>
+                </div>
+              )}
+              </>
             )}
           </div>
 

@@ -19,7 +19,7 @@ exports.getEvents = async (req, res) => {
     const user = await User.findOne({ firebaseUID: req.user.uid });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const { mode, category, city, search, upcoming } = req.query;
+    const { mode, category, city, search, upcoming, page = 1, limit = 20 } = req.query;
     
     const query = { 
       $or: [
@@ -49,8 +49,19 @@ exports.getEvents = async (req, res) => {
       });
     }
     
-    const events = await Event.find(query).sort({ date: 1 }).limit(200);
-    res.json(events);
+    const pageNumber = parseInt(page);
+    const pageSize = parseInt(limit);
+    const skip = (pageNumber - 1) * pageSize;
+
+    const totalCount = await Event.countDocuments(query);
+    const events = await Event.find(query).sort({ date: 1 }).skip(skip).limit(pageSize);
+
+    res.json({
+      events,
+      page: pageNumber,
+      totalPages: Math.ceil(totalCount / pageSize),
+      totalEvents: totalCount
+    });
   } catch (err) {
     console.error('getEvents error:', err.message);
     res.status(500).json({ message: 'Failed to fetch events' });

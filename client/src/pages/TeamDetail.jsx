@@ -25,30 +25,11 @@ export default function TeamDetail() {
   const [announceText, setAnnounceText] = useState('');
   const [announcing, setAnnouncing] = useState(false);
 
-  // Demo team
-  const demoTeam = {
-    _id: id,
-    name: 'ByteBuilders',
-    code: 'BYT3BL',
-    description: 'IIT Bombay CSE squad. We hack every weekend.',
-    color: '#ff4d4d',
-    owner: { displayName: 'Demo User', email: 'demo@trace.app' },
-    members: [
-      { _id: 'm1', displayName: 'Demo User', email: 'demo@trace.app', photoURL: null },
-      { _id: 'm2', displayName: 'Arjun Mehta', email: 'arjun@iitb.ac.in', photoURL: null },
-      { _id: 'm3', displayName: 'Priya Sharma', email: 'priya@iitb.ac.in', photoURL: null },
-    ],
-    events: allEvents.slice(0, 3),
-  };
 
   useEffect(() => {
     async function loadTeam() {
       try {
-        if (currentUser?.isDemo) {
-          setTeam(demoTeam);
-          setLoading(false);
-          return;
-        }
+
         const token = await currentUser.getIdToken();
         const res = await axios.get(`/api/teams/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -92,13 +73,7 @@ export default function TeamDetail() {
 
   async function removeEvent(eventId) {
     try {
-      if (currentUser?.isDemo) {
-        setTeam((prev) => ({
-          ...prev,
-          events: prev.events.filter((e) => (e._id || e) !== eventId),
-        }));
-        return;
-      }
+
       const token = await currentUser.getIdToken();
       await axios.put(`/api/teams/${id}/remove-event`, { eventId }, {
         headers: { Authorization: `Bearer ${token}` },
@@ -115,10 +90,7 @@ export default function TeamDetail() {
   async function handleLeave() {
     if (!confirm('Are you sure you want to leave this team?')) return;
     try {
-      if (currentUser?.isDemo) {
-        navigate('/teams');
-        return;
-      }
+
       const token = await currentUser.getIdToken();
       await axios.delete(`/api/teams/${id}/leave`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -140,12 +112,10 @@ export default function TeamDetail() {
     if (!announceText.trim()) return;
     setAnnouncing(true);
     try {
-      if (!currentUser?.isDemo) {
-        const token = await currentUser.getIdToken();
-        await axios.post(`/api/teams/${id}/announce`, { message: announceText }, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-      }
+      const token = await currentUser.getIdToken();
+      await axios.post(`/api/teams/${id}/announce`, { message: announceText }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setAnnounceText('');
       setAnnounceModalOpen(false);
       alert('Announcement pushed to team successfully!');
@@ -225,7 +195,7 @@ export default function TeamDetail() {
                 <Icon icon="solar:share-linear" /> Share Code
               </button>
               {/* Announce (Leader Only) */}
-              {(team.owner?.email === currentUser?.email || team.owner?._id === userProfile?._id || team.owner === userProfile?._id || currentUser?.isDemo) && (
+              {(team.owner?.email === currentUser?.email || team.owner?._id === userProfile?._id || team.owner === userProfile?._id) && (
                 <button
                   onClick={() => setAnnounceModalOpen(true)}
                   className="bg-blue border-[3px] border-ink text-white px-4 py-2 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-3 flex items-center gap-2 font-heading text-sm"

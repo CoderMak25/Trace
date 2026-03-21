@@ -10,27 +10,19 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('submissions');
 
-  // Demo submissions
-  const demoSubmissions = [
-    { _id: 's1', name: 'React Summit Delhi', category: 'Workshop', date: '2024-12-20', city: 'Delhi', mode: 'In-Person', submittedBy: 'user@example.com', status: 'pending' },
-    { _id: 's2', name: 'Cloud Computing Hackathon', category: 'Hackathon', date: '2025-01-10', city: 'Online', mode: 'Online', submittedBy: 'dev@college.edu', status: 'pending' },
-    { _id: 's3', name: 'Blockchain Bootcamp', category: 'Workshop', date: '2025-01-15', city: 'Pune', mode: 'In-Person', submittedBy: 'admin@fest.org', status: 'pending' },
-  ];
 
   useEffect(() => {
     async function loadSubmissions() {
       try {
-        if (currentUser?.isDemo) {
-          setSubmissions(demoSubmissions);
-        } else if (currentUser) {
+        if (currentUser) {
           const token = await currentUser.getIdToken();
           const res = await axios.get('/api/submissions', {
             headers: { Authorization: `Bearer ${token}` },
           });
           setSubmissions(res.data);
         }
-      } catch {
-        setSubmissions(demoSubmissions);
+      } catch (err) {
+        console.error('Failed to load submissions:', err);
       } finally {
         setLoading(false);
       }
@@ -40,10 +32,6 @@ export default function AdminPanel() {
 
   async function handleAction(id, action) {
     try {
-      if (currentUser?.isDemo) {
-        setSubmissions((prev) => prev.filter((s) => s._id !== id));
-        return;
-      }
       const token = await currentUser.getIdToken();
       await axios.put(`/api/submissions/${id}/${action}`, {}, {
         headers: { Authorization: `Bearer ${token}` },

@@ -4,7 +4,7 @@ import { Icon } from '@iconify/react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
-  const { googleSignIn, login, signup, demoLogin } = useAuth();
+  const { googleSignIn, login, signup } = useAuth();
   const navigate = useNavigate();
   const [isSignup, setIsSignup] = useState(false);
   const [email, setEmail] = useState('');
@@ -40,10 +40,7 @@ export default function Login() {
     }
   }
 
-  function handleDemo() {
-    demoLogin();
-    navigate('/dashboard');
-  }
+
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 relative">
@@ -99,14 +96,7 @@ export default function Login() {
           Continue with Google
         </button>
 
-        {/* Demo Login */}
-        <button
-          onClick={handleDemo}
-          className="w-full bg-yellow border-[3px] border-ink text-ink text-lg px-6 py-3 shadow-[4px_4px_0_0_#2d2d2d] hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all duration-100 flex items-center justify-center gap-3 mb-6 blob-3 -rotate-1"
-        >
-          <Icon icon="solar:play-circle-linear" className="text-xl" />
-          Try Demo (No Sign Up!)
-        </button>
+
 
         {/* Divider */}
         <div className="flex items-center gap-4 mb-6">
