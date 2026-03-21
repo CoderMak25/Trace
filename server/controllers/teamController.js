@@ -3,6 +3,9 @@ const User = require('../models/User');
 const admin = require('../config/firebaseAdmin');
 const mongoose = require('mongoose');
 
+// In-memory cache for ultra-fast GET responses
+const apiCache = new Map();
+
 // Helper: validate ObjectId format
 function isValidId(id) {
   return mongoose.Types.ObjectId.isValid(id);
@@ -35,6 +38,7 @@ exports.createTeam = async (req, res) => {
     });
     await team.save();
 
+    apiCache.clear();
     res.status(201).json(team);
   } catch (err) {
     console.error('createTeam error:', err.message);
@@ -68,6 +72,7 @@ exports.joinTeam = async (req, res) => {
       .populate('events')
       .populate('owner', 'displayName email');
 
+    apiCache.clear();
     res.json(populated);
   } catch (err) {
     console.error('joinTeam error:', err.message);
@@ -81,11 +86,19 @@ exports.getMyTeams = async (req, res) => {
     const user = await User.findOne({ firebaseUID: req.user.uid });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
+    const cacheKey = `teams_${user._id}`;
+    if (apiCache.has(cacheKey)) {
+      return res.json(apiCache.get(cacheKey));
+    }
+
     const teams = await Team.find({ members: user._id })
       .populate('members', 'displayName email photoURL')
       .populate('events')
       .populate('owner', 'displayName email')
       .sort({ createdAt: -1 });
+
+    apiCache.set(cacheKey, teams);
+    setTimeout(() => apiCache.delete(cacheKey), 2 * 60 * 1000);
 
     res.json(teams);
   } catch (err) {
@@ -101,11 +114,20 @@ exports.getTeam = async (req, res) => {
       return res.status(400).json({ message: 'Invalid team ID' });
     }
 
+    const cacheKey = `team_${req.params.id}`;
+    if (apiCache.has(cacheKey)) {
+      return res.json(apiCache.get(cacheKey));
+    }
+
     const team = await Team.findById(req.params.id)
       .populate('members', 'displayName email photoURL')
       .populate('events')
       .populate('owner', 'displayName email');
     if (!team) return res.status(404).json({ message: 'Team not found' });
+    
+    apiCache.set(cacheKey, team);
+    setTimeout(() => apiCache.delete(cacheKey), 2 * 60 * 1000);
+    
     res.json(team);
   } catch (err) {
     console.error('getTeam error:', err.message);
@@ -146,6 +168,8 @@ exports.addEventToTeam = async (req, res) => {
       .populate('events')
       .populate('members', 'displayName email photoURL')
       .populate('owner', 'displayName email');
+    
+    apiCache.clear();
     res.json(populated);
   } catch (err) {
     console.error('addEventToTeam error:', err.message);
@@ -191,6 +215,7 @@ exports.removeEventFromTeam = async (req, res) => {
       await Event.findByIdAndDelete(eventId);
     }
 
+    apiCache.clear();
     res.json({ message: 'Event permanently deleted from team schedule' });
   } catch (err) {
     console.error('removeEventFromTeam error:', err.message);
@@ -229,6 +254,7 @@ exports.updateTeam = async (req, res) => {
     if (color) team.color = color;
     await team.save();
 
+    apiCache.clear();
     res.json(team);
   } catch (err) {
     console.error('updateTeam error:', err.message);
@@ -251,6 +277,7 @@ exports.leaveTeam = async (req, res) => {
 
     if (team.owner.toString() === user._id.toString()) {
       await cascadeDeleteTeam(team);
+      apiCache.clear();
       return res.json({ message: 'Team dissolved. All events, notifications, and member links cleaned up.' });
     }
 
@@ -260,6 +287,7 @@ exports.leaveTeam = async (req, res) => {
 
     team.members = team.members.filter((id) => id.toString() !== user._id.toString());
     await team.save();
+    apiCache.clear();
     res.json({ message: 'Left team' });
   } catch (err) {
     console.error('leaveTeam error:', err.message);
@@ -285,6 +313,7 @@ exports.deleteTeam = async (req, res) => {
     }
 
     await cascadeDeleteTeam(team);
+    apiCache.clear();
     res.json({ message: 'Team deleted. All events, notifications, and member links cleaned up.' });
   } catch (err) {
     console.error('deleteTeam error:', err.message);
@@ -385,6 +414,7 @@ exports.sendTeamAnnouncement = async (req, res) => {
       });
     }
 
+    apiCache.clear();
     res.json({ message: `Announcement sent to ${response.successCount} member(s)! ${response.failureCount > 0 ? `(${response.failureCount} failed)` : ''}` });
   } catch (err) {
     console.error('[Announce] Error:', err.message);

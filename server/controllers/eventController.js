@@ -3,6 +3,9 @@ const User = require('../models/User');
 const Team = require('../models/Team');
 const mongoose = require('mongoose');
 
+// In-memory cache for ultra-fast GET responses
+const apiCache = new Map();
+
 // Helper: validate ObjectId format
 function isValidId(id) {
   return mongoose.Types.ObjectId.isValid(id);
@@ -20,6 +23,12 @@ exports.getEvents = async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const { mode, category, city, search, upcoming, page = 1, limit = 20 } = req.query;
+    
+    // Check in-memory cache first
+    const cacheKey = `events_${user._id}_${JSON.stringify(req.query)}`;
+    if (apiCache.has(cacheKey)) {
+      return res.json(apiCache.get(cacheKey));
+    }
     
     const query = { 
       $or: [
@@ -56,12 +65,18 @@ exports.getEvents = async (req, res) => {
     const totalCount = await Event.countDocuments(query);
     const events = await Event.find(query).sort({ date: 1 }).skip(skip).limit(pageSize);
 
-    res.json({
+    const responseData = {
       events,
       page: pageNumber,
       totalPages: Math.ceil(totalCount / pageSize),
       totalEvents: totalCount
-    });
+    };
+
+    // Store in cache for 2 minutes
+    apiCache.set(cacheKey, responseData);
+    setTimeout(() => apiCache.delete(cacheKey), 2 * 60 * 1000);
+
+    res.json(responseData);
   } catch (err) {
     console.error('getEvents error:', err.message);
     res.status(500).json({ message: 'Failed to fetch events' });
@@ -75,8 +90,18 @@ exports.getEventBySlug = async (req, res) => {
     if (!slug || typeof slug !== 'string') {
       return res.status(400).json({ message: 'Invalid event slug' });
     }
+
+    const cacheKey = `event_${slug}`;
+    if (apiCache.has(cacheKey)) {
+      return res.json(apiCache.get(cacheKey));
+    }
+
     const event = await Event.findOne({ slug });
     if (!event) return res.status(404).json({ message: 'Event not found' });
+    
+    apiCache.set(cacheKey, event);
+    setTimeout(() => apiCache.delete(cacheKey), 2 * 60 * 1000);
+
     res.json(event);
   } catch (err) {
     console.error('getEventBySlug error:', err.message);
@@ -129,6 +154,7 @@ exports.createEvent = async (req, res) => {
       }
     }
     
+    apiCache.clear(); // Clear cache on mutation
     res.status(201).json(event);
   } catch (err) {
     console.error('createEvent error:', err.message);
@@ -157,6 +183,8 @@ exports.updateEvent = async (req, res) => {
     const { _id, owner, __v, ...safeUpdates } = req.body;
     Object.assign(event, safeUpdates);
     await event.save();
+    
+    apiCache.clear(); // Clear cache on mutation
     res.json(event);
   } catch (err) {
     console.error('updateEvent error:', err.message);
@@ -201,6 +229,8 @@ exports.deleteEvent = async (req, res) => {
     await Notification.deleteMany({ link: `/event/${event.slug}` });
     
     await Event.findByIdAndDelete(req.params.id);
+    apiCache.clear(); // Clear cache on mutation
+    
     res.json({ message: 'Event deleted' });
   } catch (err) {
     console.error('deleteEvent error:', err.message);
