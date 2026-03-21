@@ -27,12 +27,15 @@ export function AuthProvider({ children }) {
     try {
       let fcmToken = null;
       if ('Notification' in window) {
+        console.log('[Sync] Notification permission:', Notification.permission);
         if (Notification.permission === 'granted') {
           try {
             const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+            console.log('[Sync] VAPID key present:', !!vapidKey);
             if (vapidKey) fcmToken = await getMessagingToken(vapidKey);
+            console.log('[Sync] FCM Token obtained:', fcmToken ? fcmToken.substring(0, 20) + '...' : 'null');
           } catch (e) {
-            console.error('FCM Notification permission error:', e);
+            console.error('[Sync] FCM token error:', e);
           }
         } else if (Notification.permission !== 'granted') {
           setShowNotificationPrompt(true);
@@ -40,6 +43,7 @@ export function AuthProvider({ children }) {
       }
 
       const token = await user.getIdToken();
+      console.log('[Sync] Sending to backend with fcmToken:', !!fcmToken);
       const res = await axios.post(
         '/api/users/sync',
         {
@@ -51,6 +55,7 @@ export function AuthProvider({ children }) {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      console.log('[Sync] Backend response fcmTokens count:', res.data?.fcmTokens?.length || 0);
       setUserProfile(res.data);
     } catch (err) {
       console.error('User sync failed:', err);
@@ -80,6 +85,7 @@ export function AuthProvider({ children }) {
     if (!currentUser) return;
 
     let unsubscribe;
+    console.log('[FCM] Setting up foreground listener for user:', currentUser.email);
     onForegroundMessage((payload) => {
       console.log('[Foreground FCM]', payload);
       const title = payload.data?.title || payload.notification?.title || 'Trace';
