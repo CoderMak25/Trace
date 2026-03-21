@@ -118,3 +118,10 @@ cron.schedule('*/5 * * * *', () => {
   checkDeadlines();
 });
 console.log('[CRON] Notification Service Started');
+
+// Run Unstop Sync: Every 12 hours at 8am and 8pm IST
+const { syncUnstopEvents } = require('../jobs/unstopSync');
+cron.schedule('0 2,14 * * *', () => {
+  console.log('[CRON] Running scheduled Unstop Hackathon sync...');
+  syncUnstopEvents();
+});

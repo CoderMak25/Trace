@@ -37,8 +37,12 @@ exports.getEvents = async (req, res) => {
       ]
     };
 
-    if (mode) query.mode = mode;
-    if (category) query.category = { $in: [category] };
+    if (mode) {
+      query.mode = { $regex: `^${escapeRegex(mode)}$`, $options: 'i' };
+    }
+    if (category) {
+      query.category = { $elemMatch: { $regex: escapeRegex(category), $options: 'i' } };
+    }
     if (city) query.city = { $regex: escapeRegex(city), $options: 'i' };
     if (upcoming === 'true') query.date = { $gte: new Date() };
     
@@ -50,6 +54,8 @@ exports.getEvents = async (req, res) => {
           { name: { $regex: safeSearch, $options: 'i' } },
           { organizer: { $regex: safeSearch, $options: 'i' } },
           { city: { $regex: safeSearch, $options: 'i' } },
+          { state: { $regex: safeSearch, $options: 'i' } },
+          { country: { $regex: safeSearch, $options: 'i' } },
           { description: { $regex: safeSearch, $options: 'i' } },
           { mode: { $regex: safeSearch, $options: 'i' } },
           { category: { $regex: safeSearch, $options: 'i' } },

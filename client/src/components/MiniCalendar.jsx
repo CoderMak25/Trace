@@ -95,8 +95,18 @@ export default function MiniCalendar({ events, title = 'Calendar' }) {
     for (const ev of dayEvents) {
       const startD = new Date(ev.date);
       const endD = ev.endDate ? new Date(ev.endDate) : startD;
-      if (startD.getDate() === day && startD.getMonth() === month && startD.getFullYear() === year) isStart = true;
-      if (endD.getDate() === day && endD.getMonth() === month && endD.getFullYear() === year && endD.getTime() !== startD.getTime()) isEnd = true;
+      
+      const isDayStart = startD.getDate() === day && startD.getMonth() === month && startD.getFullYear() === year;
+      const isDayEnd = endD.getDate() === day && endD.getMonth() === month && endD.getFullYear() === year;
+
+      if (ev.source === 'unstop') {
+        // For Unstop, we only want the date shown as an End point
+        if (isDayEnd) isEnd = true;
+      } else {
+        if (isDayStart) isStart = true;
+        if (isDayEnd && endD.getTime() !== startD.getTime()) isEnd = true;
+      }
+
       if (ev.registrationDeadline) {
         const rD = new Date(ev.registrationDeadline);
         if (rD.getDate() === day && rD.getMonth() === month && rD.getFullYear() === year) isDeadline = true;
@@ -206,7 +216,10 @@ export default function MiniCalendar({ events, title = 'Calendar' }) {
               return (
                 <div key={ev._id} className="text-sm text-ink/80 flex items-center gap-2 py-1">
                   <span className={`w-2 h-2 rounded-full ${color.dot} shrink-0`} />
-                  <span className="truncate">{ev.name}</span>
+                  <span className="truncate">
+                    {ev.source === 'unstop' ? <span className="text-[10px] font-heading text-red mr-1 tracking-tighter uppercase opacity-70">Ends:</span> : ''}
+                    {ev.name}
+                  </span>
                   {ev.teamName && <span className="text-xs text-purple-500 ml-auto shrink-0">({ev.teamName})</span>}
                 </div>
               );
@@ -331,11 +344,14 @@ export default function MiniCalendar({ events, title = 'Calendar' }) {
                   return (
                     <div key={ev._id} className={`bg-white border-2 ${color.border} p-4 rounded-lg flex items-start gap-4 hover:border-ink/40 transition-colors`}>
                       <div className={`w-10 h-10 ${color.dot} border-2 border-ink rounded-full flex items-center justify-center shrink-0 shadow-[2px_2px_0_0_#2d2d2d] text-white font-heading text-sm`}>
-                        {(Array.isArray(ev.category) ? ev.category[0] : ev.category || 'E').charAt(0)}
+                        {((Array.isArray(ev.category) ? ev.category[0] : ev.category) || 'E').charAt(0)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-heading text-xl tracking-tight truncate">{ev.name}</h4>
+                          <h4 className="font-heading text-xl tracking-tight truncate">
+                            {ev.source === 'unstop' ? <span className="text-xs text-red mr-2 uppercase tracking-tight opacity-70">Ends:</span> : ''}
+                            {ev.name}
+                          </h4>
                           {ev.teamName && (
                             <span className="text-xs bg-purple-100 text-purple-600 border border-purple-300 px-2 py-0.5 rounded-full font-heading shrink-0">
                               {ev.teamName}

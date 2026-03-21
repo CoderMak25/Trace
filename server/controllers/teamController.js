@@ -1,5 +1,7 @@
 const Team = require('../models/Team');
 const User = require('../models/User');
+const Event = require('../models/Event');
+const TeamEvent = require('../models/TeamEvent');
 const admin = require('../config/firebaseAdmin');
 const mongoose = require('mongoose');
 
@@ -97,10 +99,27 @@ exports.getMyTeams = async (req, res) => {
       .populate('owner', 'displayName email')
       .sort({ createdAt: -1 });
 
-    apiCache.set(cacheKey, teams);
+    const teamIds = teams.map((team) => team._id);
+    const selectedMappings = await TeamEvent.find({ team: { $in: teamIds } })
+      .populate('event')
+      .populate('addedBy', 'displayName email');
+
+    const selectedByTeam = new Map();
+    selectedMappings.forEach((mapping) => {
+      const key = mapping.team.toString();
+      if (!selectedByTeam.has(key)) selectedByTeam.set(key, []);
+      selectedByTeam.get(key).push(mapping);
+    });
+
+    const teamsWithSelections = teams.map((team) => ({
+      ...team.toObject(),
+      selectedEvents: selectedByTeam.get(team._id.toString()) || [],
+    }));
+
+    apiCache.set(cacheKey, teamsWithSelections);
     setTimeout(() => apiCache.delete(cacheKey), 2 * 60 * 1000);
 
-    res.json(teams);
+    res.json(teamsWithSelections);
   } catch (err) {
     console.error('getMyTeams error:', err.message);
     res.status(500).json({ message: 'Failed to fetch teams' });
@@ -124,11 +143,21 @@ exports.getTeam = async (req, res) => {
       .populate('events')
       .populate('owner', 'displayName email');
     if (!team) return res.status(404).json({ message: 'Team not found' });
+
+    const selectedEvents = await TeamEvent.find({ team: team._id })
+      .populate('event')
+      .populate('addedBy', 'displayName email')
+      .sort({ createdAt: -1 });
+
+    const teamWithSelections = {
+      ...team.toObject(),
+      selectedEvents,
+    };
     
-    apiCache.set(cacheKey, team);
+    apiCache.set(cacheKey, teamWithSelections);
     setTimeout(() => apiCache.delete(cacheKey), 2 * 60 * 1000);
     
-    res.json(team);
+    res.json(teamWithSelections);
   } catch (err) {
     console.error('getTeam error:', err.message);
     res.status(500).json({ message: 'Failed to fetch team' });
@@ -201,22 +230,10 @@ exports.removeEventFromTeam = async (req, res) => {
 
     team.events = team.events.filter((id) => id.toString() !== eventId);
     await team.save();
-
-    // Cascading delete the actual event since it was removed from the team
-    const Event = require('../models/Event');
-    const event = await Event.findById(eventId);
-    if (event && event.team && event.team.toString() === team._id.toString()) {
-      await User.updateMany(
-        { savedEvents: event._id },
-        { $pull: { savedEvents: event._id } }
-      );
-      const Notification = require('../models/Notification');
-      await Notification.deleteMany({ link: `/event/${event.slug}` });
-      await Event.findByIdAndDelete(eventId);
-    }
+    await hardDeleteEventEverywhere(eventId);
 
     apiCache.clear();
-    res.json({ message: 'Event permanently deleted from team schedule' });
+    res.json({ message: 'Event permanently deleted from database' });
   } catch (err) {
     console.error('removeEventFromTeam error:', err.message);
     res.status(500).json({ message: 'Failed to remove event' });
@@ -449,3 +466,157 @@ exports.sendTeamAnnouncement = async (req, res) => {
     res.status(500).json({ message: 'Failed to send announcement' });
   }
 };
+
+// POST /api/teams/:id/select-event — add an existing event to team selections
+exports.selectEventForTeam = async (req, res) => {
+  try {
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid team ID' });
+    }
+
+    const { eventId } = req.body;
+    if (!eventId || !isValidId(eventId)) {
+      return res.status(400).json({ message: 'Valid event ID is required' });
+    }
+
+    const user = await User.findOne({ firebaseUID: req.user.uid });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ message: 'Team not found' });
+    if (!team.members.some((id) => id.toString() === user._id.toString())) {
+      return res.status(403).json({ message: 'You are not a member of this team' });
+    }
+
+    const event = await Event.findById(eventId);
+    if (!event) return res.status(404).json({ message: 'Event not found' });
+
+    const existingSelection = await TeamEvent.findOne({ team: team._id, event: event._id });
+    if (existingSelection) {
+      return res.json({ message: 'Event already in team schedule', alreadySelected: true });
+    }
+
+    await TeamEvent.create({
+      team: team._id,
+      event: event._id,
+      addedBy: user._id,
+      status: 'Saved',
+    });
+
+    apiCache.clear();
+    return res.json({ message: 'Event added to team schedule', alreadySelected: false });
+  } catch (err) {
+    console.error('selectEventForTeam error:', err.message);
+    return res.status(500).json({ message: 'Failed to select event for team' });
+  }
+};
+
+// GET /api/teams/:id/selected-events — list team-selected events
+exports.getTeamSelectedEvents = async (req, res) => {
+  try {
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid team ID' });
+    }
+
+    const user = await User.findOne({ firebaseUID: req.user.uid });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const team = await Team.findById(req.params.id).select('_id members');
+    if (!team) return res.status(404).json({ message: 'Team not found' });
+    if (!team.members.some((id) => id.toString() === user._id.toString())) {
+      return res.status(403).json({ message: 'You are not a member of this team' });
+    }
+
+    const selected = await TeamEvent.find({ team: team._id })
+      .populate('event')
+      .populate('addedBy', 'displayName email')
+      .sort({ createdAt: -1 });
+
+    return res.json(selected);
+  } catch (err) {
+    console.error('getTeamSelectedEvents error:', err.message);
+    return res.status(500).json({ message: 'Failed to fetch team selected events' });
+  }
+};
+
+// DELETE /api/teams/:id/select-event/:eventId — remove event from team selections
+exports.unselectEventForTeam = async (req, res) => {
+  try {
+    if (!isValidId(req.params.id) || !isValidId(req.params.eventId)) {
+      return res.status(400).json({ message: 'Invalid team or event ID' });
+    }
+
+    const user = await User.findOne({ firebaseUID: req.user.uid });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ message: 'Team not found' });
+    if (!team.members.some((id) => id.toString() === user._id.toString())) {
+      return res.status(403).json({ message: 'You are not a member of this team' });
+    }
+
+    await TeamEvent.deleteOne({ team: team._id, event: req.params.eventId });
+    await hardDeleteEventEverywhere(req.params.eventId);
+    apiCache.clear();
+    return res.json({ message: 'Event permanently deleted from database' });
+  } catch (err) {
+    console.error('unselectEventForTeam error:', err.message);
+    return res.status(500).json({ message: 'Failed to remove selected event' });
+  }
+};
+
+// PUT /api/teams/:id/select-event/:eventId/interest — mark selected event as interested
+exports.markTeamEventInterested = async (req, res) => {
+  try {
+    if (!isValidId(req.params.id) || !isValidId(req.params.eventId)) {
+      return res.status(400).json({ message: 'Invalid team or event ID' });
+    }
+
+    const user = await User.findOne({ firebaseUID: req.user.uid });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ message: 'Team not found' });
+    if (!team.members.some((id) => id.toString() === user._id.toString())) {
+      return res.status(403).json({ message: 'You are not a member of this team' });
+    }
+
+    const mapping = await TeamEvent.findOneAndUpdate(
+      { team: team._id, event: req.params.eventId },
+      { $set: { status: 'Interested' } },
+      { new: true }
+    );
+
+    if (!mapping) {
+      return res.status(404).json({ message: 'Add this event to team first' });
+    }
+
+    apiCache.clear();
+    return res.json({ message: 'Event marked interested for team', status: mapping.status });
+  } catch (err) {
+    console.error('markTeamEventInterested error:', err.message);
+    return res.status(500).json({ message: 'Failed to mark interested for team event' });
+  }
+};
+
+async function hardDeleteEventEverywhere(eventId) {
+  const event = await Event.findById(eventId);
+  if (!event) return;
+
+  await Team.updateMany(
+    { events: event._id },
+    { $pull: { events: event._id } }
+  );
+
+  await TeamEvent.deleteMany({ event: event._id });
+
+  await User.updateMany(
+    { savedEvents: event._id },
+    { $pull: { savedEvents: event._id } }
+  );
+
+  const Notification = require('../models/Notification');
+  await Notification.deleteMany({ link: `/event/${event.slug}` });
+
+  await Event.findByIdAndDelete(event._id);
+}

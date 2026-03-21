@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const { syncAllUnstopEvents } = require('./jobs/unstopSync');
 const connectDB = require('./config/db');
 const startDeadlineNotifier = require('./jobs/deadlineNotifier');
 
@@ -39,6 +40,15 @@ const PORT = process.env.PORT || 5000;
 
 async function start() {
   await connectDB();
+  console.log('Connected to MongoDB'); // Added for clarity after connectDB()
+  
+  // Auto-sync Unstop events on startup
+  try {
+    await syncAllUnstopEvents();
+  } catch (err) {
+    console.error('Failed to sync Unstop on startup:', err);
+  }
+
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}...`);
     startDeadlineNotifier();

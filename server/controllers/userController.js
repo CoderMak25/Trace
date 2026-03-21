@@ -38,7 +38,13 @@ exports.syncUser = async (req, res) => {
         fcmTokens: (fcmToken && typeof fcmToken === 'string' && fcmToken.length > 20) ? [fcmToken] : [],
       });
     }
-    res.json(user);
+
+    // Populate savedEvents before returning to ensure frontend has complete objects
+    const populatedUser = await User.findById(user._id).populate({
+      path: 'savedEvents',
+      populate: { path: 'team', select: 'name' }
+    });
+    res.json(populatedUser);
   } catch (err) {
     console.error('syncUser error:', err.message);
     res.status(500).json({ message: 'Failed to sync user' });
@@ -78,7 +84,14 @@ exports.toggleSaveEvent = async (req, res) => {
       user.savedEvents.push(eventId);
     }
     await user.save();
-    res.json({ savedEvents: user.savedEvents });
+    
+    // Repopulate manually to return full objects to the frontend context
+    const populatedUser = await User.findById(user._id).populate({
+      path: 'savedEvents',
+      populate: { path: 'team', select: 'name' }
+    });
+    
+    res.json({ savedEvents: populatedUser.savedEvents });
   } catch (err) {
     console.error('toggleSaveEvent error:', err.message);
     res.status(500).json({ message: 'Failed to toggle save' });

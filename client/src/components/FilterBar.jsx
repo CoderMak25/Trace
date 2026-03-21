@@ -2,18 +2,18 @@ import { Icon } from '@iconify/react';
 
 export default function FilterBar({ filters, setFilters }) {
   const quickTags = [
-    { label: '#Online', color: 'blue' },
-    { label: '#In-Person', color: 'red' },
-    { label: '#Free', color: 'yellow', active: true },
-    { label: '#Hackathon', color: 'red' },
-    { label: '#Workshop', color: 'blue' },
+    { label: '#Online', color: 'blue', key: 'mode', value: 'online' },
+    { label: '#Offline', color: 'red', key: 'mode', value: 'offline' },
+    { label: '#Hybrid', color: 'yellow', key: 'mode', value: 'hybrid' },
+    { label: '#Hackathon', color: 'red', key: 'category', value: 'Hackathon' },
+    { label: '#Coding', color: 'blue', key: 'category', value: 'Coding' },
+    { label: '#Case Study', color: 'yellow', key: 'category', value: 'Case Study' },
   ];
 
   function handleTagClick(tag) {
-    const value = tag.replace('#', '');
     setFilters((prev) => ({
       ...prev,
-      search: prev.search === value ? '' : value,
+      [tag.key]: prev[tag.key] === tag.value ? '' : tag.value,
     }));
   }
 
@@ -25,7 +25,7 @@ export default function FilterBar({ filters, setFilters }) {
           <Icon icon="solar:magnifer-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-ink text-xl" />
           <input
             type="text"
-            placeholder="Search events, organizers, cities..."
+            placeholder="Search by name, college, city, state, or country..."
             value={filters.search}
             onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
             className="w-full bg-white border-[3px] border-ink text-ink text-lg pl-12 pr-4 py-3 shadow-[4px_4px_0_0_#2d2d2d] focus:outline-none focus:border-blue focus:ring-4 focus:ring-blue/10 transition-colors placeholder:text-ink/40 blob-1"
@@ -41,8 +41,9 @@ export default function FilterBar({ filters, setFilters }) {
               className="w-full appearance-none bg-tan border-[3px] border-ink text-ink text-lg pl-4 pr-10 py-3 shadow-[4px_4px_0_0_#2d2d2d] cursor-pointer focus:outline-none focus:border-red blob-2"
             >
               <option value="">Any Mode</option>
-              <option value="Online">Online</option>
-              <option value="In-Person">In-Person</option>
+              <option value="online">Online</option>
+              <option value="offline">Offline / In-Person</option>
+              <option value="hybrid">Hybrid</option>
             </select>
             <Icon icon="solar:alt-arrow-down-linear" className="absolute right-3 top-1/2 -translate-y-1/2 text-ink pointer-events-none text-xl" />
           </div>
@@ -69,9 +70,9 @@ export default function FilterBar({ filters, setFilters }) {
         {quickTags.map((tag, i) => (
           <button
             key={tag.label}
-            onClick={() => handleTagClick(tag.label)}
+            onClick={() => handleTagClick(tag)}
             className={`whitespace-nowrap border-2 px-4 py-1 transition-colors ${
-              filters.search === tag.label.replace('#', '')
+              filters[tag.key] === tag.value
                 ? `bg-${tag.color} text-white border-ink shadow-[2px_2px_0_0_#2d2d2d] ${i % 2 === 0 ? 'rotate-1' : '-rotate-1'}`
                 : `bg-white border-dashed border-ink text-ink hover:bg-${tag.color} hover:text-white hover:border-solid`
             } ${PILL_SHAPES[i % PILL_SHAPES.length]}`}

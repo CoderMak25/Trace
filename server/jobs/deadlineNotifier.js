@@ -1,19 +1,103 @@
 const cron = require('node-cron');
-const axios = require('axios');
+const Event = require('../models/Event');
+const User = require('../models/User');
+const { syncAllUnstopEvents, updateEventStatuses } = require('./unstopSync');
+const { sendPush } = require('../utils/sendPush');
+
+const ALERTS = [
+  {
+    key: '72h',
+    hours: 72,
+    title: (name) => `📅 3 days left — ${name}`,
+    body: 'Registration closes in 3 days. Start preparing your team!',
+  },
+  {
+    key: '24h',
+    hours: 24,
+    title: (name) => `⚠️ Last day — ${name}`,
+    body: "Registration closes in 24 hours. Don't wait!",
+  },
+  {
+    key: '6h',
+    hours: 6,
+    title: (name) => `🔥 6 hours left — ${name}`,
+    body: 'Final push — registration closes very soon!',
+  },
+  {
+    key: '1h',
+    hours: 1,
+    title: (name) => `🚨 Last chance — ${name}`,
+    body: '1 hour left to register. Drop everything and sign up now!',
+  },
+];
+
+async function runProgressiveDeadlineNotifications() {
+  const now = new Date();
+
+  for (const alert of ALERTS) {
+    const target = new Date(now.getTime() + alert.hours * 60 * 60 * 1000);
+    const from = new Date(target.getTime() - 30 * 60 * 1000);
+    const to = new Date(target.getTime() + 30 * 60 * 1000);
+
+    const events = await Event.find({
+      registrationDeadline: { $gte: from, $lte: to },
+      notificationsSent: { $ne: alert.key },
+    }).select('_id name registrationDeadline notificationsSent');
+
+    for (const event of events) {
+      const users = await User.find({
+        savedEvents: event._id,
+        $or: [
+          { fcmToken: { $exists: true, $nin: [null, ''] } },
+          { fcmTokens: { $exists: true, $ne: [] } },
+        ],
+      }).select('fcmToken fcmTokens');
+
+      for (const user of users) {
+        const tokens = [
+          ...(user.fcmToken ? [user.fcmToken] : []),
+          ...(Array.isArray(user.fcmTokens) ? user.fcmTokens : []),
+        ].filter(Boolean);
+
+        for (const token of tokens) {
+          await sendPush(token, alert.title(event.name), alert.body);
+        }
+      }
+
+      await Event.updateOne(
+        { _id: event._id, notificationsSent: { $ne: alert.key } },
+        { $push: { notificationsSent: alert.key } }
+      );
+    }
+  }
+}
 
 function startDeadlineNotifier() {
-  // Run daily at 9:00 AM IST (3:30 AM UTC)
-  cron.schedule('30 3 * * *', async () => {
-    console.log('[CRON] Running deadline notification check...');
+  cron.schedule('0 */3 * * *', async () => {
     try {
-      const port = process.env.PORT || 5000;
-      await axios.post(`http://localhost:${port}/api/notifications/deadline-check`);
-      console.log('[CRON] Deadline check complete');
+      await syncAllUnstopEvents();
     } catch (err) {
-      console.error('[CRON] Deadline check failed:', err.message);
+      console.error('[CRON] Full Unstop sync failed:', err.message);
     }
   });
-  console.log('[CRON] Deadline notifier scheduled for 9:00 AM IST daily');
+
+  cron.schedule('*/30 * * * *', async () => {
+    try {
+      await updateEventStatuses();
+    } catch (err) {
+      console.error('[CRON] Lightweight status sync failed:', err.message);
+    }
+  });
+
+  cron.schedule('0 * * * *', async () => {
+    try {
+      await runProgressiveDeadlineNotifications();
+    } catch (err) {
+      console.error('[CRON] Progressive deadline notifier failed:', err.message);
+    }
+  });
+
+  console.log('[CRON] Unstop sync and progressive deadline jobs started');
 }
 
 module.exports = startDeadlineNotifier;

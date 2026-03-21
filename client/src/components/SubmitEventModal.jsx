@@ -15,8 +15,13 @@ export default function SubmitEventModal({ isOpen, onClose, teamId = null, initi
     registrationLink: '',
     organizer: '',
     city: '',
+    state: '',
+    country: '',
     mode: 'In-Person',
     prizePool: '',
+    fees: 0,
+    minTeamSize: 1,
+    maxTeamSize: 1,
     description: '',
     selectionStatus: 'Pending',
   };
@@ -38,8 +43,13 @@ export default function SubmitEventModal({ isOpen, onClose, teamId = null, initi
         registrationLink: initialData.registrationLink || '',
         organizer: initialData.organizer || '',
         city: initialData.city || '',
+        state: initialData.state || '',
+        country: initialData.country || '',
         mode: initialData.mode || 'In-Person',
         prizePool: initialData.prizePool || '',
+        fees: initialData.fees || 0,
+        minTeamSize: initialData.minTeamSize || 1,
+        maxTeamSize: initialData.maxTeamSize || 1,
         description: initialData.description || '',
         selectionStatus: initialData.selectionStatus || 'Pending',
       });
@@ -51,7 +61,9 @@ export default function SubmitEventModal({ isOpen, onClose, teamId = null, initi
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    let val = type === 'checkbox' ? checked : value;
+    if (type === 'number') val = Number(value);
+    setFormData((prev) => ({ ...prev, [name]: val }));
   }
 
   async function handleSubmit(e) {
@@ -64,6 +76,10 @@ export default function SubmitEventModal({ isOpen, onClose, teamId = null, initi
         const token = await currentUser.getIdToken();
         const payload = { ...formData };
         if (teamId && !initialData) payload.teamId = teamId;
+        
+        // Strip out empty string dates so Mongoose doesn't crash with CastError
+        if (!payload.endDate) delete payload.endDate;
+        if (!payload.registrationDeadline) delete payload.registrationDeadline;
 
         let res;
         if (initialData) {
@@ -224,26 +240,6 @@ export default function SubmitEventModal({ isOpen, onClose, teamId = null, initi
                   </div>
                 </div>
 
-                {/* Organizer + City */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1">
-                    <label className="font-heading text-lg tracking-tight ml-2">Organizer *</label>
-                    <input
-                      type="text" name="organizer" required value={formData.organizer} onChange={handleChange}
-                      placeholder="e.g., Tech Club IIT"
-                      className={`${inputCls} blob-2`}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="font-heading text-lg tracking-tight ml-2">City</label>
-                    <input
-                      type="text" name="city" value={formData.city} onChange={handleChange}
-                      placeholder="e.g., Mumbai"
-                      className={`${inputCls} blob-3`}
-                    />
-                  </div>
-                </div>
-
                 {/* Registration Status */}
                 <div className="bg-tan/40 border-[3px] border-ink/20 border-dashed p-4 blob-2">
                   <div className="flex items-center gap-3 mb-3">
@@ -279,7 +275,55 @@ export default function SubmitEventModal({ isOpen, onClose, teamId = null, initi
                   )}
                 </div>
 
-                {/* Reg Link + Cost */}
+                {/* Organizer */}
+                <div className="flex flex-col gap-1">
+                  <label className="font-heading text-lg tracking-tight ml-2">Organizer / University *</label>
+                  <input
+                    type="text" name="organizer" required value={formData.organizer} onChange={handleChange}
+                    placeholder="e.g., Tech Club IIT"
+                    className={`${inputCls} blob-2`}
+                  />
+                </div>
+
+                {/* Location: City + State */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <label className="font-heading text-lg tracking-tight ml-2">City</label>
+                    <input
+                      type="text" name="city" value={formData.city} onChange={handleChange}
+                      placeholder="e.g., Mumbai"
+                      className={`${inputCls} blob-3`}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="font-heading text-lg tracking-tight ml-2">State / Country</label>
+                    <input
+                      type="text" name="state" value={formData.state} onChange={handleChange}
+                      placeholder="e.g., Maharashtra"
+                      className={`${inputCls} blob-1`}
+                    />
+                  </div>
+                </div>
+
+                {/* Participation: Team Size */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <label className="font-heading text-lg tracking-tight ml-2">Min Team</label>
+                    <input
+                      type="number" name="minTeamSize" min="1" value={formData.minTeamSize} onChange={handleChange}
+                      className={`${inputCls} blob-2`}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="font-heading text-lg tracking-tight ml-2">Max Team</label>
+                    <input
+                      type="number" name="maxTeamSize" min={formData.minTeamSize} value={formData.maxTeamSize} onChange={handleChange}
+                      className={`${inputCls} blob-3`}
+                    />
+                  </div>
+                </div>
+
+                {/* Reg Link + Fees */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1">
                     <label className="font-heading text-lg tracking-tight ml-2">Registration Link</label>
@@ -290,13 +334,23 @@ export default function SubmitEventModal({ isOpen, onClose, teamId = null, initi
                     />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="font-heading text-lg tracking-tight ml-2">Cost / Prize</label>
+                    <label className="font-heading text-lg tracking-tight ml-2">Entry Fees (₹)</label>
                     <input
-                      type="text" name="prizePool" value={formData.prizePool} onChange={handleChange}
-                      placeholder="e.g. Free, ₹50K"
+                      type="number" name="fees" min="0" value={formData.fees} onChange={handleChange}
+                      placeholder="0 for Free"
                       className={`${inputCls} blob-1`}
                     />
                   </div>
+                </div>
+
+                {/* Prize Pool / Highlights */}
+                <div className="flex flex-col gap-1">
+                  <label className="font-heading text-lg tracking-tight ml-2">Prize Pool / Highlights</label>
+                  <input
+                    type="text" name="prizePool" value={formData.prizePool} onChange={handleChange}
+                    placeholder="e.g. ₹50K, Goodies, Certificates"
+                    className={`${inputCls} blob-1`}
+                  />
                 </div>
 
                 {/* Description */}

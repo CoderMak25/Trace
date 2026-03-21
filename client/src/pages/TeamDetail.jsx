@@ -24,6 +24,7 @@ export default function TeamDetail() {
   const [announceModalOpen, setAnnounceModalOpen] = useState(false);
   const [announceText, setAnnounceText] = useState('');
   const [announcing, setAnnouncing] = useState(false);
+  const [selectedEvents, setSelectedEvents] = useState([]);
 
 
   useEffect(() => {
@@ -44,6 +45,23 @@ export default function TeamDetail() {
     }
     loadTeam();
   }, [id, currentUser, allEvents]);
+
+  useEffect(() => {
+    async function loadSelectedEvents() {
+      if (!currentUser) return;
+      try {
+        const token = await currentUser.getIdToken();
+        const res = await axios.get(`/api/teams/${id}/selected-events`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setSelectedEvents(res.data || []);
+      } catch (err) {
+        console.error('Failed to load selected events:', err);
+        setSelectedEvents([]);
+      }
+    }
+    loadSelectedEvents();
+  }, [id, currentUser]);
 
   // Refresh team manually after adding an event
   const handleEventSaved = (savedEvent, isEdit) => {
@@ -84,6 +102,40 @@ export default function TeamDetail() {
       }));
     } catch (err) {
       console.error(err);
+    }
+  }
+
+  async function removeSelectedEvent(eventId) {
+    try {
+      const token = await currentUser.getIdToken();
+      await axios.delete(`/api/teams/${id}/select-event/${eventId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSelectedEvents((prev) => prev.filter((item) => (item.event?._id || item.event) !== eventId));
+    } catch (err) {
+      console.error('Failed to remove selected event:', err);
+      alert(err.response?.data?.message || 'Failed to remove selected event');
+    }
+  }
+
+  async function markSelectedEventInterested(eventId) {
+    try {
+      const token = await currentUser.getIdToken();
+      await axios.put(
+        `/api/teams/${id}/select-event/${eventId}/interest`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setSelectedEvents((prev) =>
+        prev.map((item) => {
+          const selectedEventId = item?.event?._id || item?.event;
+          if (selectedEventId !== eventId) return item;
+          return { ...item, status: 'Interested' };
+        })
+      );
+    } catch (err) {
+      console.error('Failed to mark selected event interested:', err);
+      alert(err.response?.data?.message || 'Failed to mark as interested');
     }
   }
 
@@ -130,11 +182,37 @@ export default function TeamDetail() {
 
   // Remove availableEvents computation that was used for inline picker
 
-  // Team schedule sorted by date
+  // Team schedule merged: manual + selected events
   const schedule = useMemo(() => {
-    if (!team?.events) return [];
-    return [...team.events].sort((a, b) => new Date(a.date) - new Date(b.date));
-  }, [team]);
+    if (!team) return [];
+
+    const merged = new Map();
+    (team.events || []).forEach((event) => {
+      if (!event?._id) return;
+      merged.set(event._id, { event, sourceType: 'manual' });
+    });
+
+    (selectedEvents || []).forEach((item) => {
+      if (item?.status !== 'Interested') return;
+      const event = item?.event;
+      if (!event?._id) return;
+      if (!merged.has(event._id)) {
+        merged.set(event._id, { event, sourceType: 'selected', selectionId: item._id });
+      }
+    });
+
+    return Array.from(merged.values()).sort(
+      (a, b) => new Date(a.event.date || 0) - new Date(b.event.date || 0)
+    );
+  }, [team, selectedEvents]);
+
+  const savedSelections = useMemo(
+    () =>
+      (selectedEvents || []).filter(
+        (item) => item?.status === 'Saved' && item?.event?._id
+      ),
+    [selectedEvents]
+  );
 
   if (loading) {
     return (
@@ -259,8 +337,8 @@ export default function TeamDetail() {
               </div>
             ) : (
               <div className="flex flex-col gap-4">
-                {schedule.map((event, i) => (
-                  <div key={event._id} className="relative">
+                {schedule.map((item, i) => (
+                  <div key={item.event._id} className="relative">
                     {/* Timeline connector */}
                     {i < schedule.length - 1 && (
                       <div className="absolute left-6 top-full w-[3px] h-4 border-l-[3px] border-dashed border-ink/15" />
@@ -268,23 +346,26 @@ export default function TeamDetail() {
                     <div className="flex gap-4 items-start">
                       {/* Date badge */}
                       <div className="w-12 h-12 border-[3px] border-ink rounded-full flex flex-col items-center justify-center shadow-[2px_2px_0_0_#2d2d2d] shrink-0 text-white font-heading text-xs" style={{ backgroundColor: team.color }}>
-                        {new Date(event.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }).split(' ').map((p, j) => <span key={j}>{p}</span>)}
+                        {new Date(item.event.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }).split(' ').map((p, j) => <span key={j}>{p}</span>)}
                       </div>
                       {/* Event info */}
                       <div className="flex-1 bg-white border-[3px] border-ink p-4 shadow-[3px_3px_0_0_#2d2d2d] blob-1 group">
                         <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
-                          <Link to={`/event/${event.slug}`} className="flex-1 min-w-0">
-                            <h3 className="font-heading text-xl tracking-tight group-hover:text-red transition-colors truncate">{event.name}</h3>
+                          <Link to={`/event/${item.event.slug}?teamId=${team._id}`} className="flex-1 min-w-0">
+                            <h3 className="font-heading text-xl tracking-tight group-hover:text-red transition-colors truncate">{item.event.name}</h3>
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink/60 mt-1">
-                              <span className="flex items-center gap-1"><Icon icon="solar:users-group-rounded-linear" className="text-blue shrink-0" /> <span className="truncate">{event.organizer}</span></span>
-                              <span className="flex items-center gap-1"><Icon icon="solar:map-point-linear" className="text-blue shrink-0" /> <span className="truncate">{event.city}</span></span>
-                              <span className={`border border-ink px-2 py-0.5 text-xs font-heading shrink-0 ${event.mode === 'Online' ? 'bg-blue/10' : 'bg-tan'}`}>{event.mode}</span>
+                              <span className="flex items-center gap-1"><Icon icon="solar:users-group-rounded-linear" className="text-blue shrink-0" /> <span className="truncate">{item.event.organizer}</span></span>
+                              <span className="flex items-center gap-1"><Icon icon="solar:map-point-linear" className="text-blue shrink-0" /> <span className="truncate">{item.event.city}</span></span>
+                              <span className={`border border-ink px-2 py-0.5 text-xs font-heading shrink-0 ${item.event.mode === 'Online' ? 'bg-blue/10' : 'bg-tan'}`}>{item.event.mode}</span>
+                              {item.sourceType === 'selected' && (
+                                <span className="border border-ink px-2 py-0.5 text-xs font-heading shrink-0 bg-yellow">saved</span>
+                              )}
                             </div>
                           </Link>
                           <div className="flex gap-1 shrink-0">
-                            {(event.owner === userProfile?._id || userProfile?.role === 'admin') && (
+                            {(item.event.owner === userProfile?._id || userProfile?.role === 'admin') && item.sourceType === 'manual' && (
                               <button
-                                onClick={(e) => { e.preventDefault(); setEditEvent(event); setModalOpen(true); }}
+                                onClick={(e) => { e.preventDefault(); setEditEvent(item.event); setModalOpen(true); }}
                                 className="text-ink/30 hover:text-blue transition-colors p-1"
                                 title="Edit event"
                               >
@@ -292,7 +373,11 @@ export default function TeamDetail() {
                               </button>
                             )}
                             <button
-                              onClick={(e) => { e.preventDefault(); removeEvent(event._id); }}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (item.sourceType === 'manual') removeEvent(item.event._id);
+                                else removeSelectedEvent(item.event._id);
+                              }}
                               className="text-ink/30 hover:text-red transition-colors p-1"
                               title="Remove from schedule"
                             >
@@ -306,11 +391,52 @@ export default function TeamDetail() {
                 ))}
               </div>
             )}
+
+            <h2 className="font-heading text-2xl tracking-tight text-ink mt-10 mb-4 flex items-center gap-2">
+              <Icon icon="solar:bookmark-linear" className="text-blue" /> Saved (Not Interested Yet)
+              <span className="text-ink/40 text-lg ml-1">({savedSelections.length})</span>
+            </h2>
+
+            {savedSelections.length === 0 ? (
+              <div className="bg-white border-[3px] border-ink/20 border-dashed p-8 text-center blob-2">
+                <Icon icon="solar:bookmark-linear" className="text-4xl text-ink/20 mx-auto mb-3" />
+                <p className="font-heading text-lg text-ink/50">No saved team events pending interest</p>
+                <p className="text-ink/40 mt-1">Add events to team, then mark interested when ready.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {savedSelections.map((item) => (
+                  <div key={`saved-${item.event._id}`} className="bg-white border-[3px] border-ink p-4 shadow-[3px_3px_0_0_#2d2d2d] blob-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <Link to={`/event/${item.event.slug}?teamId=${team._id}`} className="min-w-0">
+                        <h3 className="font-heading text-xl tracking-tight truncate">{item.event.name}</h3>
+                        <p className="text-sm text-ink/60 truncate mt-1">{item.event.organizer} {item.event.city ? `• ${item.event.city}` : ''}</p>
+                      </Link>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => markSelectedEventInterested(item.event._id)}
+                          className="bg-blue border-[2px] border-ink text-white px-3 py-1 text-sm font-heading shadow-[2px_2px_0_0_#2d2d2d] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-1"
+                        >
+                          Mark Interested
+                        </button>
+                        <button
+                          onClick={() => removeSelectedEvent(item.event._id)}
+                          className="text-red hover:underline text-sm"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
           </div>
 
           {/* Right: Members */}
           <aside className="w-full lg:w-72 shrink-0 flex flex-col gap-6">
-            <MiniCalendar events={team.events} />
+            <MiniCalendar events={schedule.map((item) => item.event)} />
             <div className="bg-white border-[3px] border-ink p-5 shadow-[4px_4px_0_0_#2d2d2d] blob-3 sticky top-6">
               <h3 className="font-heading text-xl tracking-tight mb-4 flex items-center gap-2">
                 <Icon icon="solar:users-group-rounded-linear" className="text-blue" /> Members

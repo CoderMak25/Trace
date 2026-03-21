@@ -67,6 +67,23 @@ export default function EventCard({ event, index = 0, canEdit = false, onEdit })
             {event.selectionStatus}
           </span>
         )}
+        
+        {/* Engagement Stats */}
+        {(event.viewsCount > 0 || event.registerCount > 0) && (
+          <div className="flex items-center gap-3 text-[10px] text-ink/40 font-heading uppercase tracking-wider mb-2">
+            {event.viewsCount > 0 && (
+              <span className="flex items-center gap-1">
+                <Icon icon="solar:eye-linear" className="text-xs" /> {event.viewsCount.toLocaleString()} views
+              </span>
+            )}
+            {event.registerCount > 0 && (
+              <span className="flex items-center gap-1">
+                <Icon icon="solar:user-plus-linear" className="text-xs" /> {event.registerCount.toLocaleString()} registered
+              </span>
+            )}
+          </div>
+        )}
+
         <p className="text-base text-ink/80 line-clamp-2">{event.description}</p>
       </div>
 
@@ -74,15 +91,18 @@ export default function EventCard({ event, index = 0, canEdit = false, onEdit })
       <div className="flex flex-col gap-2.5 text-base mt-2">
         <div className="flex items-center gap-3">
           <Icon icon="solar:users-group-rounded-linear" className="text-xl text-blue shrink-0" />
-          {event.organizer}
+          <span className="truncate">{event.organizer}</span>
         </div>
         <div className="flex items-center gap-3">
           <Icon icon="solar:calendar-linear" className="text-xl text-red shrink-0" />
-          {formatDateRange(event.date, event.endDate)}
+          <span className="truncate">
+            {event.source === 'unstop' ? <span className="font-heading text-xs text-red mr-1 uppercase">End Date:</span> : ''}
+            {formatDateRange(event.date, event.endDate)}
+          </span>
         </div>
         <div className="flex items-center gap-3">
           <Icon icon="solar:map-point-linear" className="text-xl text-blue shrink-0" />
-          {event.city} / {event.mode}
+          <span className="truncate">{event.city}{event.state ? `, ${event.state}` : ''} / {event.mode}</span>
         </div>
       </div>
 
@@ -90,10 +110,10 @@ export default function EventCard({ event, index = 0, canEdit = false, onEdit })
       <div className="mt-auto pt-4 border-t-[3px] border-dashed border-tan flex justify-between items-end">
         <div className="flex flex-col">
           <span className="text-xs text-ink/60 uppercase tracking-wider">
-            {event.prizePool && event.prizePool !== 'Free' ? 'Prize Pool' : event.highlights ? 'Highlights' : 'Cost'}
+            {event.fees > 0 ? 'Entry Fee' : (event.prizePool && event.prizePool !== 'Free' ? 'Prize Pool' : event.highlights ? 'Highlights' : 'Cost')}
           </span>
           <span className="font-heading text-2xl tracking-tight text-blue">
-            {event.prizePool || event.highlights || 'Free'}
+            {event.fees > 0 ? `₹${event.fees}` : (event.prizePool || event.highlights || 'Free')}
           </span>
         </div>
         {deadline && (

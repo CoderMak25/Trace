@@ -43,7 +43,12 @@ export default function SavedEvents() {
   // we filter out any events that are no longer bookmarked.
   useEffect(() => {
     if (!loading && userProfile?.savedEvents) {
-      setSavedEvents((prev) => prev.filter((e) => userProfile.savedEvents.includes(e._id)));
+      const savedIds = new Set(
+        (userProfile.savedEvents || [])
+          .map((item) => (typeof item === 'object' && item !== null ? item._id : item))
+          .filter(Boolean)
+      );
+      setSavedEvents((prev) => prev.filter((e) => savedIds.has(e._id)));
     }
   }, [userProfile?.savedEvents, loading]);
 

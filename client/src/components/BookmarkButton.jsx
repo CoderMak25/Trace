@@ -5,7 +5,7 @@ import axios from 'axios';
 
 export default function BookmarkButton({ eventId }) {
   const { currentUser, userProfile, setUserProfile } = useAuth();
-  const [saved, setSaved] = useState(userProfile?.savedEvents?.includes(eventId) || false);
+  const [saved, setSaved] = useState(userProfile?.savedEvents?.some(e => (e._id || e) === eventId) || false);
   const [animating, setAnimating] = useState(false);
 
   async function toggleBookmark(e) {
@@ -22,9 +22,10 @@ export default function BookmarkButton({ eventId }) {
       if (currentUser.isDemo) {
         setUserProfile((prev) => {
           if (!prev) return prev;
-          const newSaved = prev.savedEvents.includes(eventId)
-            ? prev.savedEvents.filter((x) => x !== eventId)
-            : [...prev.savedEvents, eventId];
+          const exists = prev.savedEvents.some(x => (x._id || x) === eventId);
+          const newSaved = exists
+            ? prev.savedEvents.filter((x) => (x._id || x) !== eventId)
+            : [...prev.savedEvents, eventId]; // For Demo mode, pushing string is fine since it's transient
           return { ...prev, savedEvents: newSaved };
         });
         return;

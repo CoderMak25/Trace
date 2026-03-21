@@ -7,9 +7,8 @@ export function useEvents(teamId = null) {
   const { currentUser } = useAuth();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
+  const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     search: '',
@@ -18,22 +17,16 @@ export function useEvents(teamId = null) {
     city: '',
   });
 
-  const fetchEvents = useCallback(async (isLoadMore = false) => {
+  const fetchEvents = useCallback(async (targetPage = 1) => {
     if (!currentUser) {
       setEvents([]);
       setLoading(false);
-      setLoadingMore(false);
       return;
     }
 
-    if (isLoadMore) {
-      setLoadingMore(true);
-    } else {
-      setLoading(true);
-    }
+    setLoading(true);
 
     try {
-      const targetPage = isLoadMore ? page + 1 : 1;
       const params = new URLSearchParams();
       if (filters.search) params.append('search', filters.search);
       if (filters.mode) params.append('mode', filters.mode);
@@ -50,18 +43,14 @@ export function useEvents(teamId = null) {
       });
       
       if (res.data.events) {
-        // New paginated response
-        if (isLoadMore) {
-          setEvents(prev => [...prev, ...res.data.events]);
-        } else {
-          setEvents(res.data.events);
-        }
+        // ALWAYS replace for explicit pagination
+        setEvents(res.data.events);
         setPage(res.data.page);
-        setHasMore(res.data.page < res.data.totalPages);
+        setTotalPages(res.data.totalPages || 1);
       } else {
         // Fallback backward compatibility
         setEvents(res.data);
-        setHasMore(false);
+        setTotalPages(1);
       }
       setError(null);
     } catch (err) {
@@ -69,25 +58,29 @@ export function useEvents(teamId = null) {
       setError(err.message);
     } finally {
       setLoading(false);
-      setLoadingMore(false);
     }
-  }, [filters, currentUser, teamId, page]);
+  }, [filters, currentUser, teamId]);
 
-  const loadMore = useCallback(() => {
-    if (!loading && !loadingMore && hasMore) {
-      fetchEvents(true);
+  const goToPage = useCallback((newPage) => {
+    if (!loading && newPage >= 1 && newPage <= totalPages) {
+      fetchEvents(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [loading, loadingMore, hasMore, fetchEvents]);
+  }, [loading, totalPages, fetchEvents]);
 
   // Reset page and fetch when filters change
   useEffect(() => {
-    fetchEvents(false);
+    fetchEvents(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   const addEventLocally = useCallback((newEvent) => {
-    setEvents((prev) => [newEvent, ...prev]);
-  }, []);
+    setEvents((prev) => {
+      // If we are on page 1, show it at the top
+      if (page === 1) return [newEvent, ...prev];
+      return prev;
+    });
+  }, [page]);
 
   const updateEventLocally = useCallback((updatedEvent) => {
     setEvents((prev) => prev.map((e) => e._id === updatedEvent._id ? updatedEvent : e));
@@ -97,5 +90,8 @@ export function useEvents(teamId = null) {
     setEvents((prev) => prev.filter((e) => e._id !== eventId));
   }, []);
 
-  return { events, loading, loadingMore, hasMore, loadMore, error, filters, setFilters, refetch: () => fetchEvents(false), addEventLocally, updateEventLocally, removeEventLocally };
+  return { 
+    events, loading, page, totalPages, goToPage, error, filters, setFilters, 
+    refetch: () => fetchEvents(page), addEventLocally, updateEventLocally, removeEventLocally 
+  };
 }

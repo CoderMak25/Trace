@@ -40,7 +40,7 @@ function DeadlineTicker({ events }) {
 
 // ─── Main Dashboard ────────────────────────────────────
 export default function Home() {
-  const { events, loading, loadingMore, hasMore, loadMore, filters, setFilters, addEventLocally, updateEventLocally, removeEventLocally } = useEvents();
+  const { events, loading, page, totalPages, goToPage, filters, setFilters, addEventLocally, updateEventLocally, removeEventLocally } = useEvents();
   const { currentUser, userProfile } = useAuth();
   const [modalOpen, setModalOpen] = useState(false);
   const [editEvent, setEditEvent] = useState(null);
@@ -56,10 +56,16 @@ export default function Home() {
         const res = await axios.get('/api/teams', {
           headers: { Authorization: `Bearer ${token}` },
         });
-        // Tag each event with its team name for the calendar
-        const allTeamEvts = res.data.flatMap((team) =>
-          (team.events || []).map((ev) => ({ ...ev, teamName: team.name }))
-        );
+        // Tag each team-linked event (manual + selected) with team name for calendar clarity.
+        const allTeamEvts = res.data.flatMap((team) => {
+          const manual = (team.events || []).map((ev) => ({ ...ev, teamName: team.name }));
+          const selected = (team.selectedEvents || [])
+            .filter((item) => item?.status === 'Interested')
+            .map((item) => item?.event)
+            .filter((ev) => ev && ev._id)
+            .map((ev) => ({ ...ev, teamName: team.name }));
+          return [...manual, ...selected];
+        });
         // Deduplicate by _id (keep first occurrence which has team name)
         const unique = allTeamEvts.filter((te, i, arr) => arr.findIndex((x) => x._id === te._id) === i);
         setTeamEvents(unique);
@@ -73,10 +79,31 @@ export default function Home() {
   // Merge personal + team events (deduplicated) for the calendar
   const allCalendarEvents = useMemo(() => {
     const map = new Map();
-    events.forEach((e) => map.set(e._id, e));
-    teamEvents.forEach((e) => { if (!map.has(e._id)) map.set(e._id, e); });
+    
+    if (userProfile?.savedEvents && Array.isArray(userProfile.savedEvents)) {
+      userProfile.savedEvents.forEach(e => {
+        if (typeof e === 'object' && e !== null && e._id) map.set(e._id, e);
+      });
+    }
+
+    events.forEach((e) => {
+      if (e.source !== 'unstop') {
+        map.set(e._id, e);
+      }
+    });
+    
+    // Team-linked copy should enrich/override existing entry so calendar can show team context.
+    teamEvents.forEach((e) => {
+      if (!e?._id) return;
+      const existing = map.get(e._id);
+      if (!existing) {
+        map.set(e._id, e);
+      } else {
+        map.set(e._id, { ...existing, ...e, teamName: e.teamName || existing.teamName });
+      }
+    });
     return Array.from(map.values());
-  }, [events, teamEvents]);
+  }, [events, teamEvents, userProfile?.savedEvents]);
 
   const handleEventSaved = (savedEvent, isEdit) => {
     if (isEdit) updateEventLocally(savedEvent);
@@ -91,10 +118,12 @@ export default function Home() {
     setEditEvent(null);
   };
 
-  const savedEvents = allCalendarEvents.filter((e) => userProfile?.savedEvents?.includes(e._id));
+  const savedEvents = (userProfile?.savedEvents || []).filter(e => typeof e === 'object' && e !== null && e._id);
   const upcomingCount = allCalendarEvents.filter((e) => daysUntil(e.date) >= 0).length;
   const onlineCount = allCalendarEvents.filter((e) => e.mode === 'Online').length;
   const inPersonCount = allCalendarEvents.filter((e) => e.mode === 'In-Person').length;
+  const userEvents = events.filter((e) => e.source !== 'unstop');
+  const unstopEvents = events.filter((e) => e.source === 'unstop');
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-x-hidden">
@@ -187,79 +216,215 @@ export default function Home() {
               </div>
             ) : viewMode === 'grid' ? (
               <>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {events.map((event, i) => (
-                  <EventCard 
-                    key={event._id} 
-                    event={event} 
-                    index={i} 
-                    canEdit={event.owner === userProfile?._id || userProfile?.role === 'admin'}
-                    onEdit={(e) => { setEditEvent(e); setModalOpen(true); }}
-                  />
-                ))}
-              </div>
-              {hasMore && (
-                <div className="mt-10 flex justify-center">
-                  <button 
-                    onClick={loadMore} 
-                    disabled={loadingMore} 
-                    className="bg-white border-[3px] border-ink px-8 py-3 font-heading tracking-widest uppercase hover:bg-yellow hover:-translate-y-1 transition-all shadow-[4px_4px_0_0_#2d2d2d] disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-white flex items-center gap-2 blob-2"
-                  >
-                    {loadingMore ? <><Icon icon="solar:refresh-linear" className="animate-spin" /> Loading...</> : 'Load More Events'}
-                  </button>
-                </div>
-              )}
+                {userEvents.length > 0 && (
+                  <div className="mb-12">
+                    <h3 className="font-heading text-2xl tracking-tight text-ink mb-6 flex items-center gap-3">
+                      <div className="w-8 h-8 bg-blue text-white rounded-full border-[2px] border-ink flex items-center justify-center shadow-[2px_2px_0_0_#2d2d2d]">
+                        <Icon icon="solar:users-group-rounded-linear" />
+                      </div>
+                      Community & Team Events
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                      {userEvents.map((event, i) => (
+                        <EventCard 
+                          key={event._id} 
+                          event={event} 
+                          index={i} 
+                          canEdit={event.owner === userProfile?._id || userProfile?.role === 'admin'}
+                          onEdit={(e) => { setEditEvent(e); setModalOpen(true); }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {unstopEvents.length > 0 && (
+                  <div className="mb-8">
+                    <h3 className="font-heading text-2xl tracking-tight text-ink mb-6 flex items-center gap-3">
+                      <div className="w-8 h-8 bg-yellow text-ink rounded-full border-[2px] border-ink flex items-center justify-center shadow-[2px_2px_0_0_#2d2d2d]">
+                        <Icon icon="solar:global-linear" />
+                      </div>
+                      Unstop Hackathons
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                      {unstopEvents.map((event, i) => (
+                        <EventCard 
+                          key={event._id} 
+                          event={event} 
+                          index={i} 
+                          canEdit={event.owner === userProfile?._id || userProfile?.role === 'admin'}
+                          onEdit={(e) => { setEditEvent(e); setModalOpen(true); }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {totalPages > 1 && (
+                  <div className="mt-10 flex flex-wrap justify-center items-center gap-2">
+                    <button
+                      onClick={() => goToPage(page - 1)}
+                      disabled={page === 1 || loading}
+                      className="w-10 h-10 flex items-center justify-center bg-white border-[3px] border-ink text-ink font-heading text-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-yellow hover:-translate-y-1 transition-all shadow-[2px_2px_0_0_#2d2d2d] blob-1"
+                    >
+                      <Icon icon="solar:alt-arrow-left-linear" />
+                    </button>
+                    
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let p = page;
+                      if (totalPages <= 5) p = i + 1;
+                      else if (page <= 3) p = i + 1;
+                      else if (page >= totalPages - 2) p = totalPages - 4 + i;
+                      else p = page - 2 + i;
+                      
+                      if (p < 1 || p > totalPages) return null;
+                      
+                      return (
+                        <button
+                          key={p}
+                          onClick={() => goToPage(p)}
+                          disabled={loading}
+                          className={`w-10 h-10 flex items-center justify-center border-[3px] border-ink font-heading text-lg transition-all shadow-[2px_2px_0_0_#2d2d2d] ${page === p ? 'bg-red text-white -translate-y-1 shadow-[4px_4px_0_0_#2d2d2d]' : 'bg-white text-ink hover:bg-yellow hover:-translate-y-1'} blob-2`}
+                        >
+                          {p}
+                        </button>
+                      );
+                    })}
+                    
+                    <button
+                      onClick={() => goToPage(page + 1)}
+                      disabled={page === totalPages || loading}
+                      className="w-10 h-10 flex items-center justify-center bg-white border-[3px] border-ink text-ink font-heading text-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-yellow hover:-translate-y-1 transition-all shadow-[2px_2px_0_0_#2d2d2d] blob-3"
+                    >
+                      <Icon icon="solar:alt-arrow-right-linear" />
+                    </button>
+                  </div>
+                )}
               </>
             ) : (
               <>
-              <div className="flex flex-col gap-3">
-                {events.map((event) => (
-                  <Link
-                    key={event._id}
-                    to={`/event/${event.slug}`}
-                    className="bg-white border-[3px] border-ink p-4 shadow-[3px_3px_0_0_#2d2d2d] flex items-center gap-4 hover:shadow-[5px_5px_0_0_#2d2d2d] hover:-translate-y-0.5 transition-all blob-1 group"
-                  >
-                    <div className={`w-12 h-12 border-2 border-ink rounded-full flex items-center justify-center shrink-0 shadow-[2px_2px_0_0_#2d2d2d] ${event.category?.includes('Hackathon') ? 'bg-red text-white' : event.category?.includes('Workshop') ? 'bg-blue text-white' : 'bg-yellow text-ink'}`}>
-                      <Icon icon={event.category?.includes('Hackathon') ? 'solar:code-linear' : event.category?.includes('Workshop') ? 'solar:notebook-linear' : 'solar:cup-star-linear'} className="text-xl" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-heading text-xl tracking-tight truncate group-hover:text-red transition-colors">{event.name}</h3>
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink/60 mt-0.5">
-                        <span className="truncate max-w-[120px] sm:max-w-none">{event.organizer}</span>
-                        <span className="hidden sm:inline">•</span>
-                        <span className="shrink-0">{formatDate(event.date)}</span>
-                        <span className="hidden sm:inline">•</span>
-                        <span className="truncate max-w-[120px] sm:max-w-none">{event.city}</span>
-                      </div>
-                    </div>
-                    <div className="hidden sm:flex items-center gap-2 shrink-0">
-                      {event.prizePool && event.prizePool !== 'Free' && (
-                        <span className="bg-yellow border-2 border-ink px-2 py-0.5 text-xs font-heading shadow-[1px_1px_0_0_#2d2d2d] blob-2">{event.prizePool}</span>
-                      )}
-                      <span className={`border-2 border-ink px-2 py-0.5 text-xs font-heading blob-3 ${event.mode === 'Online' ? 'bg-blue/10' : 'bg-tan'}`}>{event.mode}</span>
-                      {(event.owner === userProfile?._id || userProfile?.role === 'admin') && (
-                        <button
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditEvent(event); setModalOpen(true); }}
-                          className="bg-white border-2 border-ink p-1 text-ink/40 hover:text-blue hover:shadow-[1px_1px_0_0_#2d2d2d] transition-all blob-1 ml-2"
+                {userEvents.length > 0 && (
+                  <div className="mb-10">
+                    <h3 className="font-heading text-xl tracking-tight text-ink mb-4 flex items-center gap-2">
+                      <Icon icon="solar:users-group-rounded-linear" className="text-blue" /> Community & Team Events
+                    </h3>
+                    <div className="flex flex-col gap-3">
+                      {userEvents.map((event) => (
+                        <Link
+                          key={event._id}
+                          to={`/event/${event.slug}`}
+                          className="bg-white border-[3px] border-ink p-4 shadow-[3px_3px_0_0_#2d2d2d] flex items-center gap-4 hover:shadow-[5px_5px_0_0_#2d2d2d] hover:-translate-y-0.5 transition-all blob-1 group"
                         >
-                          <Icon icon="solar:pen-linear" />
-                        </button>
-                      )}
+                          <div className={`w-12 h-12 border-2 border-ink rounded-full flex items-center justify-center shrink-0 shadow-[2px_2px_0_0_#2d2d2d] ${event.category?.includes('Hackathon') ? 'bg-red text-white' : event.category?.includes('Workshop') ? 'bg-blue text-white' : 'bg-yellow text-ink'}`}>
+                            <Icon icon={event.category?.includes('Hackathon') ? 'solar:code-linear' : event.category?.includes('Workshop') ? 'solar:notebook-linear' : 'solar:cup-star-linear'} className="text-xl" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-heading text-xl tracking-tight truncate group-hover:text-red transition-colors">{event.name}</h3>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink/60 mt-0.5">
+                              <span className="truncate max-w-[120px] sm:max-w-none">{event.organizer}</span>
+                              <span className="hidden sm:inline">•</span>
+                              <span className="shrink-0">{formatDate(event.date)}</span>
+                              <span className="hidden sm:inline">•</span>
+                              <span className="truncate max-w-[120px] sm:max-w-none">{event.city}</span>
+                            </div>
+                          </div>
+                          <div className="hidden sm:flex items-center gap-2 shrink-0">
+                            {event.prizePool && event.prizePool !== 'Free' && (
+                              <span className="bg-yellow border-2 border-ink px-2 py-0.5 text-xs font-heading shadow-[1px_1px_0_0_#2d2d2d] blob-2">{event.prizePool}</span>
+                            )}
+                            <span className={`border-2 border-ink px-2 py-0.5 text-xs font-heading blob-3 ${event.mode === 'Online' ? 'bg-blue/10' : 'bg-tan'}`}>{event.mode}</span>
+                            {(event.owner === userProfile?._id || userProfile?.role === 'admin') && (
+                              <button
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditEvent(event); setModalOpen(true); }}
+                                className="bg-white border-2 border-ink p-1 text-ink/40 hover:text-blue hover:shadow-[1px_1px_0_0_#2d2d2d] transition-all blob-1 ml-2"
+                              >
+                                <Icon icon="solar:pen-linear" />
+                              </button>
+                            )}
+                          </div>
+                        </Link>
+                      ))}
                     </div>
-                  </Link>
-                ))}
-              </div>
-              {hasMore && (
-                <div className="mt-8 flex justify-center">
-                  <button 
-                    onClick={loadMore} 
-                    disabled={loadingMore} 
-                    className="bg-white border-[3px] border-ink px-8 py-3 font-heading tracking-widest uppercase hover:bg-yellow hover:-translate-y-1 transition-all shadow-[4px_4px_0_0_#2d2d2d] disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-white flex items-center gap-2 blob-3"
-                  >
-                    {loadingMore ? <><Icon icon="solar:refresh-linear" className="animate-spin" /> Loading...</> : 'Load More Events'}
-                  </button>
-                </div>
-              )}
+                  </div>
+                )}
+
+                {unstopEvents.length > 0 && (
+                  <div className="mb-8">
+                    <h3 className="font-heading text-xl tracking-tight text-ink mb-4 flex items-center gap-2">
+                      <Icon icon="solar:global-linear" className="text-yellow" /> Unstop Hackathons
+                    </h3>
+                    <div className="flex flex-col gap-3">
+                      {unstopEvents.map((event) => (
+                        <Link
+                          key={event._id}
+                          to={`/event/${event.slug}`}
+                          className="bg-tan/20 border-[3px] border-ink p-4 shadow-[3px_3px_0_0_#2d2d2d] flex items-center gap-4 hover:shadow-[5px_5px_0_0_#2d2d2d] hover:-translate-y-0.5 transition-all blob-1 group"
+                        >
+                          <div className="w-12 h-12 border-2 border-ink rounded-full flex items-center justify-center shrink-0 shadow-[2px_2px_0_0_#2d2d2d] bg-yellow text-ink">
+                            <Icon icon="solar:cup-star-linear" className="text-xl" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-heading text-xl tracking-tight truncate group-hover:text-red transition-colors">{event.name}</h3>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink/60 mt-0.5">
+                              <span className="truncate max-w-[120px] sm:max-w-none">{event.organizer}</span>
+                              <span className="hidden sm:inline">•</span>
+                              <span className="shrink-0">{formatDate(event.date)}</span>
+                              <span className="hidden sm:inline">•</span>
+                              <span className="truncate max-w-[120px] sm:max-w-none">{event.city}</span>
+                            </div>
+                          </div>
+                          <div className="hidden sm:flex items-center gap-2 shrink-0">
+                            {event.prizePool && event.prizePool !== 'Free' && event.prizePool !== '0' && event.prizePool !== '₹0' && (
+                              <span className="bg-yellow border-2 border-ink px-2 py-0.5 text-xs font-heading shadow-[1px_1px_0_0_#2d2d2d] blob-2">{event.prizePool}</span>
+                            )}
+                            <span className={`border-2 border-ink px-2 py-0.5 text-xs font-heading blob-3 ${event.mode === 'Online' ? 'bg-blue/10' : 'bg-white'}`}>{event.mode}</span>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {totalPages > 1 && (
+                  <div className="mt-8 flex flex-wrap justify-center items-center gap-2">
+                    <button
+                      onClick={() => goToPage(page - 1)}
+                      disabled={page === 1 || loading}
+                      className="w-10 h-10 flex items-center justify-center bg-white border-[3px] border-ink text-ink font-heading text-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-yellow hover:-translate-y-1 transition-all shadow-[2px_2px_0_0_#2d2d2d] blob-3"
+                    >
+                      <Icon icon="solar:alt-arrow-left-linear" />
+                    </button>
+                    
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let p = page;
+                      if (totalPages <= 5) p = i + 1;
+                      else if (page <= 3) p = i + 1;
+                      else if (page >= totalPages - 2) p = totalPages - 4 + i;
+                      else p = page - 2 + i;
+                      
+                      if (p < 1 || p > totalPages) return null;
+                      
+                      return (
+                        <button
+                          key={p}
+                          onClick={() => goToPage(p)}
+                          disabled={loading}
+                          className={`w-10 h-10 flex items-center justify-center border-[3px] border-ink font-heading text-lg transition-all shadow-[2px_2px_0_0_#2d2d2d] ${page === p ? 'bg-red text-white -translate-y-1 shadow-[4px_4px_0_0_#2d2d2d]' : 'bg-white text-ink hover:bg-yellow hover:-translate-y-1'} blob-1`}
+                        >
+                          {p}
+                        </button>
+                      );
+                    })}
+                    
+                    <button
+                      onClick={() => goToPage(page + 1)}
+                      disabled={page === totalPages || loading}
+                      className="w-10 h-10 flex items-center justify-center bg-white border-[3px] border-ink text-ink font-heading text-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-yellow hover:-translate-y-1 transition-all shadow-[2px_2px_0_0_#2d2d2d] blob-2"
+                    >
+                      <Icon icon="solar:alt-arrow-right-linear" />
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </div>

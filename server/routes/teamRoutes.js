@@ -10,6 +10,10 @@ const {
   leaveTeam,
   deleteTeam,
   sendTeamAnnouncement,
+  selectEventForTeam,
+  getTeamSelectedEvents,
+  unselectEventForTeam,
+  markTeamEventInterested,
 } = require('../controllers/teamController');
 const authMiddleware = require('../middleware/authMiddleware');
 const rateLimit = require('express-rate-limit');
@@ -31,5 +35,9 @@ router.put('/:id/remove-event', authMiddleware, removeEventFromTeam);
 router.delete('/:id/leave', authMiddleware, leaveTeam);
 router.delete('/:id', authMiddleware, deleteTeam);
 router.post('/:id/announce', authMiddleware, announceLimiter, sendTeamAnnouncement);
+router.post('/:id/select-event', authMiddleware, selectEventForTeam);
+router.get('/:id/selected-events', authMiddleware, getTeamSelectedEvents);
+router.delete('/:id/select-event/:eventId', authMiddleware, unselectEventForTeam);
+router.put('/:id/select-event/:eventId/interest', authMiddleware, markTeamEventInterested);
 
 module.exports = router;
