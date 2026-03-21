@@ -8,7 +8,11 @@ export default function BookmarkButton({ eventId }) {
   const [saved, setSaved] = useState(userProfile?.savedEvents?.includes(eventId) || false);
   const [animating, setAnimating] = useState(false);
 
-  async function toggleBookmark() {
+  async function toggleBookmark(e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (!currentUser) return;
     setAnimating(true);
     setSaved((prev) => !prev);

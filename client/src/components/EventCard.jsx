@@ -21,8 +21,9 @@ export default function EventCard({ event, index = 0, canEdit = false, onEdit })
   const tagBg = TAG_COLORS[mainCategory] || 'bg-tan';
 
   return (
-    <article
-      className={`${cardBg} border-[3px] border-ink p-6 flex flex-col gap-4 shadow-[4px_4px_0_0_#2d2d2d] relative group transition-all duration-200 ${hoverClass} hover:shadow-[8px_8px_0_0_#2d2d2d] hover:-translate-y-1 ${blobClass}`}
+    <Link
+      to={`/event/${event.slug}`}
+      className={`${cardBg} border-[3px] border-ink p-6 flex flex-col gap-4 shadow-[4px_4px_0_0_#2d2d2d] relative group transition-all duration-200 ${hoverClass} hover:shadow-[8px_8px_0_0_#2d2d2d] hover:-translate-y-1 ${blobClass} text-left`}
     >
       {/* Tape / Pin Decoration */}
       {index % 2 === 0 ? (
@@ -51,7 +52,7 @@ export default function EventCard({ event, index = 0, canEdit = false, onEdit })
       </div>
 
       {/* Title + Description */}
-      <Link to={`/event/${event.slug}`} className="block">
+      <div className="block mt-1">
         <h3 className="font-heading text-3xl tracking-tight leading-none mb-1 group-hover:text-red transition-colors">
           {event.name}
         </h3>
@@ -67,7 +68,7 @@ export default function EventCard({ event, index = 0, canEdit = false, onEdit })
           </span>
         )}
         <p className="text-base text-ink/80 line-clamp-2">{event.description}</p>
-      </Link>
+      </div>
 
       {/* Details */}
       <div className="flex flex-col gap-2.5 text-base mt-2">
@@ -101,6 +102,6 @@ export default function EventCard({ event, index = 0, canEdit = false, onEdit })
           </span>
         )}
       </div>
-    </article>
+    </Link>
   );
 }
