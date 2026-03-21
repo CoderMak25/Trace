@@ -16,10 +16,11 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  const notificationTitle = payload.notification.title;
+  const notificationTitle = payload.data?.title || payload.notification?.title || 'Trace';
   const notificationOptions = {
-    body: payload.notification.body,
-    icon: '/vite.svg', // Assuming standard Vite icon or you can customize
+    body: payload.data?.body || payload.notification?.body || '',
+    icon: '/vite.svg',
+    tag: 'trace-bg-notif',
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);

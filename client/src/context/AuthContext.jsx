@@ -82,22 +82,13 @@ export function AuthProvider({ children }) {
     let unsubscribe;
     onForegroundMessage((payload) => {
       console.log('[Foreground FCM]', payload);
-      const title = payload.notification?.title || payload.data?.title || 'Trace';
-      const body = payload.notification?.body || payload.data?.body || '';
+      const title = payload.data?.title || payload.notification?.title || 'Trace';
+      const body = payload.data?.body || payload.notification?.body || '';
 
-      if ('Notification' in window && Notification.permission === 'granted') {
-        try {
-          new Notification(title, {
-            body,
-            icon: '/vite.svg',
-            tag: 'trace-notif', // Same tag = replaces instead of stacking
-          });
-        } catch (e) {
-          navigator.serviceWorker.ready.then((reg) => {
-            reg.showNotification(title, { body, icon: '/vite.svg', tag: 'trace-notif' });
-          });
-        }
-      }
+      // Always show via service worker for reliability (works on all browsers)
+      navigator.serviceWorker.ready.then((reg) => {
+        reg.showNotification(title, { body, icon: '/vite.svg', tag: 'trace-fg-notif' });
+      });
     }).then((unsub) => {
       unsubscribe = unsub;
     });
