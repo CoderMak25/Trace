@@ -113,12 +113,12 @@ export default function TeamDetail() {
     setAnnouncing(true);
     try {
       const token = await currentUser.getIdToken();
-      await axios.post(`/api/teams/${id}/announce`, { message: announceText }, {
+      const res = await axios.post(`/api/teams/${id}/announce`, { message: announceText }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAnnounceText('');
       setAnnounceModalOpen(false);
-      alert('Announcement pushed to team successfully!');
+      alert(res.data?.message || 'Announcement sent!');
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || 'Failed to send announcement');
