@@ -391,6 +391,10 @@ exports.sendTeamAnnouncement = async (req, res) => {
     }
 
     const payload = {
+      notification: {
+        title: notifTitle,
+        body: notifBody,
+      },
       data: {
         title: notifTitle,
         body: notifBody,

@@ -27,6 +27,7 @@ exports.sendToAll = async (req, res) => {
     }
 
     const message = {
+      notification: { title: title.trim(), body: body.trim() },
       data: { title: title.trim(), body: body.trim() },
       tokens,
     };
@@ -88,6 +89,10 @@ exports.deadlineCheck = async (req, res) => {
       if (tokens.length === 0) continue;
 
       const message = {
+        notification: {
+          title: `⏰ Deadline Alert: ${event.name}`,
+          body: `Registration closes in 3 days! Don't miss out.`,
+        },
         data: {
           title: `⏰ Deadline Alert: ${event.name}`,
           body: `Registration closes in 3 days! Don't miss out.`,

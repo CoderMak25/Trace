@@ -25,14 +25,18 @@ self.addEventListener('activate', (event) => {
 
 messaging.onBackgroundMessage(function(payload) {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  var data = payload.data || {};
-  var notification = payload.notification || {};
-  var notificationTitle = data.title || notification.title || 'Trace';
-  var notificationOptions = {
-    body: data.body || notification.body || '',
-    icon: '/vite.svg',
-    tag: 'trace-bg-notif',
-  };
+  
+  // If the payload contains a 'notification' object, Firebase Web SDK automatically handles displaying it.
+  // We only show it manually if it's a data-only payload.
+  if (!payload.notification) {
+    var data = payload.data || {};
+    var notificationTitle = data.title || 'Trace';
+    var notificationOptions = {
+      body: data.body || '',
+      icon: '/vite.svg',
+      tag: 'trace-bg-notif',
+    };
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+    self.registration.showNotification(notificationTitle, notificationOptions);
+  }
 });

@@ -67,6 +67,10 @@ async function sendDeadlineNotification(event, milestoneLabel) {
   const displayLabel = milestoneLabel.replace('d', ' days').replace('h', ' hours').replace('1 days', '1 day').replace('1 hours', '1 hour');
 
   const message = {
+    notification: {
+      title: 'Registration Closing Soon! ⏰',
+      body: `The deadline for ${event.name} ends in ${displayLabel}! Don't forget to register.`,
+    },
     data: {
       title: 'Registration Closing Soon! ⏰',
       body: `The deadline for ${event.name} ends in ${displayLabel}! Don't forget to register.`,
