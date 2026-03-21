@@ -3,8 +3,14 @@ const Event = require('../models/Event');
 
 const UNSTOP_URL = 'https://unstop.com/api/public/opportunity/search-result';
 const PER_PAGE = 50;
+const REQUEST_TIMEOUT_MS = 15000;
+const MAX_RETRIES = 3;
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const http = axios.create({
+  timeout: REQUEST_TIMEOUT_MS,
+  headers: { 'User-Agent': 'Mozilla/5.0' },
+});
 
 function toDate(value) {
   if (!value) return undefined;
@@ -58,20 +64,28 @@ function mapUnstopToEvent(unstopEvent) {
 }
 
 async function fetchUnstopPage(page, extraParams = {}) {
-  const response = await axios.get(UNSTOP_URL, {
-    params: {
-      opportunity: 'hackathons',
-      oppstatus: 'open',
-      per_page: PER_PAGE,
-      page,
-      ...extraParams,
-    },
-    headers: {
-      'User-Agent': 'Mozilla/5.0',
-    },
-  });
+  let lastError = null;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt += 1) {
+    try {
+      const response = await http.get(UNSTOP_URL, {
+        params: {
+          opportunity: 'hackathons',
+          oppstatus: 'open',
+          per_page: PER_PAGE,
+          page,
+          ...extraParams,
+        },
+      });
+      return response.data?.data?.data || [];
+    } catch (err) {
+      lastError = err;
+      if (attempt < MAX_RETRIES) {
+        await delay(400 * attempt);
+      }
+    }
+  }
 
-  return response.data?.data?.data || [];
+  throw lastError;
 }
 
 async function syncAllUnstopEvents() {
@@ -89,17 +103,21 @@ async function syncAllUnstopEvents() {
     totalFetched += events.length;
 
     for (const rawEvent of events) {
-      const mappedEvent = mapUnstopToEvent(rawEvent);
-      if (!mappedEvent.registrationLink) continue;
+      try {
+        const mappedEvent = mapUnstopToEvent(rawEvent);
+        if (!mappedEvent.registrationLink) continue;
 
-      const existing = await Event.findOneAndUpdate(
-        { registrationLink: mappedEvent.registrationLink },
-        { $set: mappedEvent },
-        { upsert: true, new: false }
-      );
+        const existing = await Event.findOneAndUpdate(
+          { registrationLink: mappedEvent.registrationLink },
+          { $set: mappedEvent },
+          { upsert: true, new: false }
+        ).lean();
 
-      if (existing) updated += 1;
-      else added += 1;
+        if (existing) updated += 1;
+        else added += 1;
+      } catch (eventErr) {
+        console.error('[Unstop Sync] Event upsert failed:', eventErr.message);
+      }
     }
 
     if (events.length < PER_PAGE) break;
@@ -119,17 +137,21 @@ async function updateEventStatuses() {
     const registrationLink = rawEvent?.seo_url || '';
     if (!registrationLink) continue;
 
-    await Event.findOneAndUpdate(
-      { registrationLink },
-      {
-        $set: {
-          status: rawEvent?.status || 'LIVE',
-          registrationDeadline: toDate(rawEvent?.regnRequirements?.end_regn_dt),
-          totalRegistrations: Number(rawEvent?.registerCount || 0),
+    try {
+      await Event.findOneAndUpdate(
+        { registrationLink },
+        {
+          $set: {
+            status: rawEvent?.status || 'LIVE',
+            registrationDeadline: toDate(rawEvent?.regnRequirements?.end_regn_dt),
+            totalRegistrations: Number(rawEvent?.registerCount || 0),
+          },
         },
-      },
-      { upsert: false }
-    );
+        { upsert: false }
+      );
+    } catch (statusErr) {
+      console.error('[Unstop Sync] Status update failed:', statusErr.message);
+    }
   }
 
   console.log(`[Unstop Sync] Lightweight status sync complete | checked: ${events.length}`);

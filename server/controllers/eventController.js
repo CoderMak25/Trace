@@ -1,6 +1,7 @@
 const Event = require('../models/Event');
 const User = require('../models/User');
 const Team = require('../models/Team');
+const TeamEvent = require('../models/TeamEvent');
 const mongoose = require('mongoose');
 
 // In-memory cache for ultra-fast GET responses
@@ -19,7 +20,7 @@ function escapeRegex(str) {
 // GET /api/events — fetch all personal and public events
 exports.getEvents = async (req, res) => {
   try {
-    const user = await User.findOne({ firebaseUID: req.user.uid });
+    const user = await User.findOne({ firebaseUID: req.user.uid }).select('_id');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const { mode, category, city, search, upcoming, page = 1, limit = 20 } = req.query;
@@ -69,7 +70,11 @@ exports.getEvents = async (req, res) => {
     const skip = (pageNumber - 1) * pageSize;
 
     const totalCount = await Event.countDocuments(query);
-    const events = await Event.find(query).sort({ date: 1 }).skip(skip).limit(pageSize);
+    const events = await Event.find(query)
+      .sort({ date: 1 })
+      .skip(skip)
+      .limit(pageSize)
+      .lean();
 
     const responseData = {
       events,
@@ -102,7 +107,7 @@ exports.getEventBySlug = async (req, res) => {
       return res.json(apiCache.get(cacheKey));
     }
 
-    const event = await Event.findOne({ slug });
+    const event = await Event.findOne({ slug }).lean();
     if (!event) return res.status(404).json({ message: 'Event not found' });
     
     apiCache.set(cacheKey, event);
@@ -157,6 +162,14 @@ exports.createEvent = async (req, res) => {
       if (team && team.members.some(id => id.toString() === user._id.toString())) {
         team.events.push(event._id);
         await team.save();
+
+        // Create initial TeamEvent status record as 'Saved'
+        await TeamEvent.create({
+          team: teamId,
+          event: event._id,
+          addedBy: user._id,
+          status: 'Saved'
+        });
       }
     }
     

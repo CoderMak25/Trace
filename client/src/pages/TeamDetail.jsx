@@ -64,7 +64,7 @@ export default function TeamDetail() {
   }, [id, currentUser]);
 
   // Refresh team manually after adding an event
-  const handleEventSaved = (savedEvent, isEdit) => {
+  const handleEventSaved = async (savedEvent, isEdit) => {
     setModalOpen(false);
     setEditEvent(null);
     if (isEdit) {
@@ -78,6 +78,18 @@ export default function TeamDetail() {
         events: [...prev.events, savedEvent],
       }));
     }
+    
+    // Refresh selections to show new event in "Saved" section
+    if (!currentUser) return;
+    try {
+      const token = await currentUser.getIdToken();
+      const res = await axios.get(`/api/teams/${id}/selected-events`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSelectedEvents(res.data || []);
+    } catch (err) {
+      console.error('Failed to refresh selections after save:', err);
+    }
   };
 
   const handleEventDeleted = (eventId) => {
@@ -87,9 +99,11 @@ export default function TeamDetail() {
       ...prev,
       events: prev.events.filter((e) => (e._id || e) !== eventId),
     }));
+    setSelectedEvents((prev) => prev.filter((item) => (item.event?._id || item.event) !== eventId));
   };
 
   async function removeEvent(eventId) {
+    if (!confirm('Are you sure you want to remove this manual event? It will be permanently deleted from the team.')) return;
     try {
 
       const token = await currentUser.getIdToken();
@@ -100,12 +114,14 @@ export default function TeamDetail() {
         ...prev,
         events: prev.events.filter((e) => (e._id || e) !== eventId),
       }));
+      setSelectedEvents((prev) => prev.filter((item) => (item.event?._id || item.event) !== eventId));
     } catch (err) {
       console.error(err);
     }
   }
 
   async function removeSelectedEvent(eventId) {
+    if (!confirm('Remove this event from the team schedule?')) return;
     try {
       const token = await currentUser.getIdToken();
       await axios.delete(`/api/teams/${id}/select-event/${eventId}`, {
@@ -187,18 +203,15 @@ export default function TeamDetail() {
     if (!team) return [];
 
     const merged = new Map();
-    (team.events || []).forEach((event) => {
-      if (!event?._id) return;
-      merged.set(event._id, { event, sourceType: 'manual' });
-    });
-
     (selectedEvents || []).forEach((item) => {
       if (item?.status !== 'Interested') return;
       const event = item?.event;
       if (!event?._id) return;
-      if (!merged.has(event._id)) {
-        merged.set(event._id, { event, sourceType: 'selected', selectionId: item._id });
-      }
+      merged.set(event._id, { 
+        event, 
+        sourceType: event.source === 'unstop' ? 'selected' : 'manual', 
+        selectionId: item._id 
+      });
     });
 
     return Array.from(merged.values()).sort(

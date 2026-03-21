@@ -50,4 +50,13 @@ eventSchema.pre('save', function () {
   }
 });
 
+// Scale-oriented indexes for high-traffic read paths and sync upserts.
+eventSchema.index({ registrationLink: 1 }, { unique: true, sparse: true });
+eventSchema.index({ source: 1, date: 1 });
+eventSchema.index({ owner: 1, team: 1, date: 1 });
+eventSchema.index({ mode: 1 });
+eventSchema.index({ category: 1 });
+eventSchema.index({ city: 1 });
+eventSchema.index({ registrationDeadline: 1 });
+
 module.exports = mongoose.model('Event', eventSchema);

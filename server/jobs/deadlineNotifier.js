@@ -3,6 +3,9 @@ const Event = require('../models/Event');
 const User = require('../models/User');
 const { syncAllUnstopEvents, updateEventStatuses } = require('./unstopSync');
 const { sendPush } = require('../utils/sendPush');
+let isFullSyncRunning = false;
+let isStatusSyncRunning = false;
+let isNotifierRunning = false;
 
 const ALERTS = [
   {
@@ -42,7 +45,7 @@ async function runProgressiveDeadlineNotifications() {
     const events = await Event.find({
       registrationDeadline: { $gte: from, $lte: to },
       notificationsSent: { $ne: alert.key },
-    }).select('_id name registrationDeadline notificationsSent');
+    }).select('_id name registrationDeadline notificationsSent').lean();
 
     for (const event of events) {
       const users = await User.find({
@@ -51,7 +54,7 @@ async function runProgressiveDeadlineNotifications() {
           { fcmToken: { $exists: true, $nin: [null, ''] } },
           { fcmTokens: { $exists: true, $ne: [] } },
         ],
-      }).select('fcmToken fcmTokens');
+      }).select('fcmToken fcmTokens').lean();
 
       for (const user of users) {
         const tokens = [
@@ -74,26 +77,38 @@ async function runProgressiveDeadlineNotifications() {
 
 function startDeadlineNotifier() {
   cron.schedule('0 */3 * * *', async () => {
+    if (isFullSyncRunning) return;
+    isFullSyncRunning = true;
     try {
       await syncAllUnstopEvents();
     } catch (err) {
       console.error('[CRON] Full Unstop sync failed:', err.message);
+    } finally {
+      isFullSyncRunning = false;
     }
   });
 
   cron.schedule('*/30 * * * *', async () => {
+    if (isStatusSyncRunning) return;
+    isStatusSyncRunning = true;
     try {
       await updateEventStatuses();
     } catch (err) {
       console.error('[CRON] Lightweight status sync failed:', err.message);
+    } finally {
+      isStatusSyncRunning = false;
     }
   });
 
   cron.schedule('0 * * * *', async () => {
+    if (isNotifierRunning) return;
+    isNotifierRunning = true;
     try {
       await runProgressiveDeadlineNotifications();
     } catch (err) {
       console.error('[CRON] Progressive deadline notifier failed:', err.message);
+    } finally {
+      isNotifierRunning = false;
     }
   });
 

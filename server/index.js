@@ -38,6 +38,14 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
+process.on('unhandledRejection', (reason) => {
+  console.error('[Process] Unhandled rejection:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('[Process] Uncaught exception:', error);
+});
+
 async function start() {
   await connectDB();
   console.log('Connected to MongoDB'); // Added for clarity after connectDB()
