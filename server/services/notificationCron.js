@@ -58,8 +58,8 @@ async function sendDeadlineNotification(event, milestoneLabel) {
 
   // Filter users who have allowed FCM
   const tokens = targetUsers
-    .filter(u => u && u.fcmToken)
-    .map(u => u.fcmToken);
+    .flatMap(u => (u && u.fcmTokens) ? u.fcmTokens : [])
+    .filter(t => typeof t === 'string' && t.length > 0);
 
   if (tokens.length === 0) return;
 

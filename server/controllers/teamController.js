@@ -1,6 +1,12 @@
 const Team = require('../models/Team');
 const User = require('../models/User');
 const admin = require('../config/firebaseAdmin');
+const mongoose = require('mongoose');
+
+// Helper: validate ObjectId format
+function isValidId(id) {
+  return mongoose.Types.ObjectId.isValid(id);
+}
 
 // POST /api/teams — create a team
 exports.createTeam = async (req, res) => {
@@ -9,9 +15,20 @@ exports.createTeam = async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const { name, description, color } = req.body;
+
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return res.status(400).json({ message: 'Team name is required' });
+    }
+    if (name.trim().length > 50) {
+      return res.status(400).json({ message: 'Team name must be 50 characters or less' });
+    }
+    if (description && description.length > 200) {
+      return res.status(400).json({ message: 'Description must be 200 characters or less' });
+    }
+
     const team = new Team({
-      name,
-      description: description || '',
+      name: name.trim(),
+      description: (description || '').trim(),
       color: color || '#ff4d4d',
       owner: user._id,
       members: [user._id],
@@ -20,6 +37,7 @@ exports.createTeam = async (req, res) => {
 
     res.status(201).json(team);
   } catch (err) {
+    console.error('createTeam error:', err.message);
     res.status(400).json({ message: err.message });
   }
 };
@@ -31,10 +49,14 @@ exports.joinTeam = async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const { code } = req.body;
-    const team = await Team.findOne({ code: code.toUpperCase() });
+    if (!code || typeof code !== 'string' || code.trim().length === 0) {
+      return res.status(400).json({ message: 'Team code is required' });
+    }
+
+    const team = await Team.findOne({ code: code.trim().toUpperCase() });
     if (!team) return res.status(404).json({ message: 'Team not found. Check the code and try again.' });
 
-    if (team.members.includes(user._id)) {
+    if (team.members.some(id => id.toString() === user._id.toString())) {
       return res.status(400).json({ message: 'You are already a member of this team.' });
     }
 
@@ -48,7 +70,8 @@ exports.joinTeam = async (req, res) => {
 
     res.json(populated);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('joinTeam error:', err.message);
+    res.status(500).json({ message: 'Failed to join team' });
   }
 };
 
@@ -66,13 +89,18 @@ exports.getMyTeams = async (req, res) => {
 
     res.json(teams);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('getMyTeams error:', err.message);
+    res.status(500).json({ message: 'Failed to fetch teams' });
   }
 };
 
 // GET /api/teams/:id — get single team
 exports.getTeam = async (req, res) => {
   try {
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid team ID' });
+    }
+
     const team = await Team.findById(req.params.id)
       .populate('members', 'displayName email photoURL')
       .populate('events')
@@ -80,23 +108,34 @@ exports.getTeam = async (req, res) => {
     if (!team) return res.status(404).json({ message: 'Team not found' });
     res.json(team);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('getTeam error:', err.message);
+    res.status(500).json({ message: 'Failed to fetch team' });
   }
 };
 
 // PUT /api/teams/:id/add-event — add event to team schedule
 exports.addEventToTeam = async (req, res) => {
   try {
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid team ID' });
+    }
+
     const team = await Team.findById(req.params.id);
     if (!team) return res.status(404).json({ message: 'Team not found' });
 
     const user = await User.findOne({ firebaseUID: req.user.uid });
-    if (!team.members.includes(user._id)) {
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (!team.members.some(id => id.toString() === user._id.toString())) {
       return res.status(403).json({ message: 'You are not a member of this team' });
     }
 
     const { eventId } = req.body;
-    if (team.events.includes(eventId)) {
+    if (!eventId || !isValidId(eventId)) {
+      return res.status(400).json({ message: 'Valid event ID is required' });
+    }
+
+    if (team.events.some(id => id.toString() === eventId)) {
       return res.json({ message: 'Event already in team schedule' });
     }
 
@@ -109,84 +148,125 @@ exports.addEventToTeam = async (req, res) => {
       .populate('owner', 'displayName email');
     res.json(populated);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('addEventToTeam error:', err.message);
+    res.status(500).json({ message: 'Failed to add event' });
   }
 };
 
 // PUT /api/teams/:id/remove-event — remove event from team schedule
 exports.removeEventFromTeam = async (req, res) => {
   try {
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid team ID' });
+    }
+
     const team = await Team.findById(req.params.id);
     if (!team) return res.status(404).json({ message: 'Team not found' });
 
     const user = await User.findOne({ firebaseUID: req.user.uid });
-    if (!team.members.includes(user._id)) {
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (!team.members.some(id => id.toString() === user._id.toString())) {
       return res.status(403).json({ message: 'You are not a member of this team' });
     }
 
     const { eventId } = req.body;
+    if (!eventId || !isValidId(eventId)) {
+      return res.status(400).json({ message: 'Valid event ID is required' });
+    }
+
     team.events = team.events.filter((id) => id.toString() !== eventId);
     await team.save();
 
     res.json({ message: 'Event removed from team schedule' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('removeEventFromTeam error:', err.message);
+    res.status(500).json({ message: 'Failed to remove event' });
   }
 };
 
 // PUT /api/teams/:id — update team details (owner only)
 exports.updateTeam = async (req, res) => {
   try {
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid team ID' });
+    }
+
     const team = await Team.findById(req.params.id);
     if (!team) return res.status(404).json({ message: 'Team not found' });
 
     const user = await User.findOne({ firebaseUID: req.user.uid });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
     if (team.owner.toString() !== user._id.toString()) {
       return res.status(403).json({ message: 'Only the team owner can update details' });
     }
 
     const { name, description, color } = req.body;
-    if (name) team.name = name;
-    if (description !== undefined) team.description = description;
+    if (name !== undefined) {
+      if (typeof name !== 'string' || name.trim().length === 0) {
+        return res.status(400).json({ message: 'Team name cannot be empty' });
+      }
+      if (name.trim().length > 50) {
+        return res.status(400).json({ message: 'Team name must be 50 characters or less' });
+      }
+      team.name = name.trim();
+    }
+    if (description !== undefined) team.description = (description || '').trim();
     if (color) team.color = color;
     await team.save();
 
     res.json(team);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('updateTeam error:', err.message);
+    res.status(500).json({ message: 'Failed to update team' });
   }
 };
 
 // DELETE /api/teams/:id/leave — leave a team
 exports.leaveTeam = async (req, res) => {
   try {
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid team ID' });
+    }
+
     const team = await Team.findById(req.params.id);
     if (!team) return res.status(404).json({ message: 'Team not found' });
 
     const user = await User.findOne({ firebaseUID: req.user.uid });
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
     if (team.owner.toString() === user._id.toString()) {
-      // Owner leaves → full cascade delete
       await cascadeDeleteTeam(team);
       return res.json({ message: 'Team dissolved. All events, notifications, and member links cleaned up.' });
     }
 
-    // Regular member leaves
+    if (!team.members.some(id => id.toString() === user._id.toString())) {
+      return res.status(400).json({ message: 'You are not a member of this team' });
+    }
+
     team.members = team.members.filter((id) => id.toString() !== user._id.toString());
     await team.save();
     res.json({ message: 'Left team' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('leaveTeam error:', err.message);
+    res.status(500).json({ message: 'Failed to leave team' });
   }
 };
 
 // DELETE /api/teams/:id — delete team entirely (owner only)
 exports.deleteTeam = async (req, res) => {
   try {
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid team ID' });
+    }
+
     const team = await Team.findById(req.params.id);
     if (!team) return res.status(404).json({ message: 'Team not found' });
 
     const user = await User.findOne({ firebaseUID: req.user.uid });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
     if (team.owner.toString() !== user._id.toString()) {
       return res.status(403).json({ message: 'Only the team owner can delete the team.' });
     }
@@ -194,7 +274,8 @@ exports.deleteTeam = async (req, res) => {
     await cascadeDeleteTeam(team);
     res.json({ message: 'Team deleted. All events, notifications, and member links cleaned up.' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('deleteTeam error:', err.message);
+    res.status(500).json({ message: 'Failed to delete team' });
   }
 };
 
@@ -203,32 +284,29 @@ async function cascadeDeleteTeam(team) {
   const Event = require('../models/Event');
   const Notification = require('../models/Notification');
 
-  // 1. Get all event IDs belonging to this team
   const teamEventIds = team.events.map(id => id.toString());
 
-  // 2. Delete all events tied to this team from the Event collection
   await Event.deleteMany({ _id: { $in: teamEventIds } });
-  // Also delete any events that reference this team via `team` field (safety net)
   await Event.deleteMany({ team: team._id });
 
-  // 3. Remove those event IDs from every user's savedEvents
   if (teamEventIds.length > 0) {
     await User.updateMany(
       { savedEvents: { $in: teamEventIds } },
-      { $pull: { savedEvents: { $in: teamEventIds.map(id => require('mongoose').Types.ObjectId.createFromHexString(id)) } } }
+      { $pull: { savedEvents: { $in: teamEventIds.map(id => mongoose.Types.ObjectId.createFromHexString(id)) } } }
     );
   }
 
-  // 4. Delete all notifications linked to this team
   await Notification.deleteMany({ link: `/teams/${team._id}` });
-
-  // 5. Delete the team itself
   await Team.findByIdAndDelete(team._id);
 }
 
 // POST /api/teams/:id/announce — Send an FCM push to all team members
 exports.sendTeamAnnouncement = async (req, res) => {
   try {
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid team ID' });
+    }
+
     const user = await User.findOne({ firebaseUID: req.user.uid });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -240,10 +318,15 @@ exports.sendTeamAnnouncement = async (req, res) => {
     }
 
     const { message } = req.body;
-    if (!message) return res.status(400).json({ message: 'Announcement message is required.' });
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      return res.status(400).json({ message: 'Announcement message is required.' });
+    }
+    if (message.trim().length > 500) {
+      return res.status(400).json({ message: 'Announcement must be 500 characters or less.' });
+    }
 
     const notifTitle = `📣 Announcement: ${team.name}`;
-    const notifBody = message;
+    const notifBody = message.trim();
 
     // Save to DB regardless of FCM status
     const Notification = require('../models/Notification');
@@ -257,8 +340,7 @@ exports.sendTeamAnnouncement = async (req, res) => {
     await Notification.insertMany(dbNotifs);
 
     const tokens = team.members
-      .filter(m => m.fcmToken && typeof m.fcmToken === 'string' && m.fcmToken.length > 20)
-      .map(m => m.fcmToken);
+      .flatMap(m => (m.fcmTokens || []).filter(t => typeof t === 'string' && t.length > 20));
 
     console.log(`[Announce] Team: ${team.name}, Members: ${team.members.length}, Valid Tokens: ${tokens.length}`);
 
@@ -292,7 +374,7 @@ exports.sendTeamAnnouncement = async (req, res) => {
 
     res.json({ message: `Announcement sent to ${response.successCount} member(s)! ${response.failureCount > 0 ? `(${response.failureCount} failed)` : ''}` });
   } catch (err) {
-    console.error('[Announce] Error:', err);
-    res.status(500).json({ message: err.message });
+    console.error('[Announce] Error:', err.message);
+    res.status(500).json({ message: 'Failed to send announcement' });
   }
 };

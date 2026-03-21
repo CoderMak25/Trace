@@ -1,57 +1,75 @@
 const Event = require('../models/Event');
-
 const User = require('../models/User');
 const Team = require('../models/Team');
+const mongoose = require('mongoose');
+
+// Helper: validate ObjectId format
+function isValidId(id) {
+  return mongoose.Types.ObjectId.isValid(id);
+}
+
+// Helper: escape regex special chars to prevent ReDoS
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 // GET /api/events — fetch all personal and public events
 exports.getEvents = async (req, res) => {
   try {
     const user = await User.findOne({ firebaseUID: req.user.uid });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
     const { mode, category, city, search, upcoming } = req.query;
     
-    // By default, fetch events owned by the user (and not attached to a team)
     const query = { 
       $or: [
-        { owner: user?._id, team: null },
-        { verified: true, owner: { $exists: false } } // Seeded public events
+        { owner: user._id, team: null },
+        { verified: true, owner: { $exists: false } }
       ]
     };
 
     if (mode) query.mode = mode;
     if (category) query.category = { $in: [category] };
-    if (city) query.city = { $regex: city, $options: 'i' };
+    if (city) query.city = { $regex: escapeRegex(city), $options: 'i' };
     if (upcoming === 'true') query.date = { $gte: new Date() };
     
     if (search) {
+      const safeSearch = escapeRegex(search);
       query.$and = query.$and || [];
       query.$and.push({
         $or: [
-          { name: { $regex: search, $options: 'i' } },
-          { organizer: { $regex: search, $options: 'i' } },
-          { city: { $regex: search, $options: 'i' } },
-          { description: { $regex: search, $options: 'i' } },
-          { mode: { $regex: search, $options: 'i' } },
-          { category: { $regex: search, $options: 'i' } },
-          { prizePool: { $regex: search, $options: 'i' } },
+          { name: { $regex: safeSearch, $options: 'i' } },
+          { organizer: { $regex: safeSearch, $options: 'i' } },
+          { city: { $regex: safeSearch, $options: 'i' } },
+          { description: { $regex: safeSearch, $options: 'i' } },
+          { mode: { $regex: safeSearch, $options: 'i' } },
+          { category: { $regex: safeSearch, $options: 'i' } },
+          { prizePool: { $regex: safeSearch, $options: 'i' } },
         ]
       });
     }
     
-    const events = await Event.find(query).sort({ date: 1 });
+    const events = await Event.find(query).sort({ date: 1 }).limit(200);
     res.json(events);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('getEvents error:', err.message);
+    res.status(500).json({ message: 'Failed to fetch events' });
   }
 };
 
 // GET /api/events/:slug — single event
 exports.getEventBySlug = async (req, res) => {
   try {
-    const event = await Event.findOne({ slug: req.params.slug });
+    const slug = req.params.slug;
+    if (!slug || typeof slug !== 'string') {
+      return res.status(400).json({ message: 'Invalid event slug' });
+    }
+    const event = await Event.findOne({ slug });
     if (!event) return res.status(404).json({ message: 'Event not found' });
     res.json(event);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('getEventBySlug error:', err.message);
+    res.status(500).json({ message: 'Failed to fetch event' });
   }
 };
 
@@ -59,23 +77,42 @@ exports.getEventBySlug = async (req, res) => {
 exports.createEvent = async (req, res) => {
   try {
     const user = await User.findOne({ firebaseUID: req.user.uid });
+    if (!user) return res.status(404).json({ message: 'User not found' });
     
-    // Extract teamId if passed from frontend
-    const { teamId, ...eventData } = req.body;
+    const { teamId, name, organizer, date, ...restData } = req.body;
+
+    // Validate required fields
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return res.status(400).json({ message: 'Event name is required' });
+    }
+    if (!organizer || typeof organizer !== 'string' || organizer.trim().length === 0) {
+      return res.status(400).json({ message: 'Organizer is required' });
+    }
+    if (!date) {
+      return res.status(400).json({ message: 'Event date is required' });
+    }
+    if (isNaN(new Date(date).getTime())) {
+      return res.status(400).json({ message: 'Invalid event date' });
+    }
+    if (teamId && !isValidId(teamId)) {
+      return res.status(400).json({ message: 'Invalid team ID' });
+    }
     
     const event = new Event({ 
-      ...eventData, 
+      ...restData,
+      name: name.trim(),
+      organizer: organizer.trim(),
+      date,
       owner: user._id,
       team: teamId || null,
-      verified: true // Personal/team events are inherently verified
+      verified: true
     });
     
     await event.save();
     
-    // If it's a team event, add it to team's array
     if (teamId) {
       const team = await Team.findById(teamId);
-      if (team && team.members.includes(user._id)) {
+      if (team && team.members.some(id => id.toString() === user._id.toString())) {
         team.events.push(event._id);
         await team.save();
       }
@@ -83,6 +120,7 @@ exports.createEvent = async (req, res) => {
     
     res.status(201).json(event);
   } catch (err) {
+    console.error('createEvent error:', err.message);
     res.status(400).json({ message: err.message });
   }
 };
@@ -90,19 +128,27 @@ exports.createEvent = async (req, res) => {
 // PUT /api/events/:id — edit event
 exports.updateEvent = async (req, res) => {
   try {
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid event ID' });
+    }
+
     const user = await User.findOne({ firebaseUID: req.user.uid });
-    const event = await Event.findOne({ _id: req.params.id });
-    
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const event = await Event.findById(req.params.id);
     if (!event) return res.status(404).json({ message: 'Event not found' });
     
     if (event.owner?.toString() !== user._id.toString() && user.role !== 'admin') {
       return res.status(403).json({ message: 'Unauthorized' });
     }
     
-    Object.assign(event, req.body);
+    // Prevent overwriting protected fields
+    const { _id, owner, __v, ...safeUpdates } = req.body;
+    Object.assign(event, safeUpdates);
     await event.save();
     res.json(event);
   } catch (err) {
+    console.error('updateEvent error:', err.message);
     res.status(400).json({ message: err.message });
   }
 };
@@ -110,9 +156,14 @@ exports.updateEvent = async (req, res) => {
 // DELETE /api/events/:id — delete event
 exports.deleteEvent = async (req, res) => {
   try {
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid event ID' });
+    }
+
     const user = await User.findOne({ firebaseUID: req.user.uid });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
     const event = await Event.findById(req.params.id);
-    
     if (!event) return res.status(404).json({ message: 'Event not found' });
     
     if (event.owner?.toString() !== user._id.toString() && user.role !== 'admin') {
@@ -141,6 +192,7 @@ exports.deleteEvent = async (req, res) => {
     await Event.findByIdAndDelete(req.params.id);
     res.json({ message: 'Event deleted' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('deleteEvent error:', err.message);
+    res.status(500).json({ message: 'Failed to delete event' });
   }
 };

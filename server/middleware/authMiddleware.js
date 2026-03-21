@@ -7,7 +7,12 @@ const authMiddleware = async (req, res, next) => {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ message: 'No token provided' });
     }
-    const token = authHeader.split('Bearer ')[1];
+    
+    const token = authHeader.substring(7).trim(); // Safely extract after "Bearer "
+    if (!token) {
+      return res.status(401).json({ message: 'Malformed token' });
+    }
+
     const decoded = await admin.auth().verifyIdToken(token);
     // Get user from MongoDB, create if missing
     let user = await User.findOne({ firebaseUID: decoded.uid });

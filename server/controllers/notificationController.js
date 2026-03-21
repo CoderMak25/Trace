@@ -1,27 +1,41 @@
 const admin = require('../config/firebase');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
+const mongoose = require('mongoose');
+
+function isValidId(id) {
+  return mongoose.Types.ObjectId.isValid(id);
+}
 
 // POST /api/notifications/send — admin send push to all
 exports.sendToAll = async (req, res) => {
   try {
     const { title, body } = req.body;
-    const users = await User.find({ fcmToken: { $exists: true, $ne: '' } });
-    const tokens = users.map((u) => u.fcmToken).filter(Boolean);
+    
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      return res.status(400).json({ message: 'Notification title is required' });
+    }
+    if (!body || typeof body !== 'string' || body.trim().length === 0) {
+      return res.status(400).json({ message: 'Notification body is required' });
+    }
+
+    const users = await User.find({ fcmTokens: { $exists: true, $not: { $size: 0 } } });
+    const tokens = users.flatMap((u) => u.fcmTokens).filter(Boolean);
 
     if (tokens.length === 0) {
       return res.json({ message: 'No tokens found', sent: 0 });
     }
 
     const message = {
-      notification: { title, body },
+      notification: { title: title.trim(), body: body.trim() },
       tokens,
     };
 
     const result = await admin.messaging().sendEachForMulticast(message);
     res.json({ sent: result.successCount, failed: result.failureCount });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('sendToAll error:', err.message);
+    res.status(500).json({ message: 'Failed to send notifications' });
   }
 };
 
@@ -47,7 +61,7 @@ exports.deadlineCheck = async (req, res) => {
     const eventIds = events.map((e) => e._id);
     const users = await User.find({
       savedEvents: { $in: eventIds },
-      fcmToken: { $exists: true, $ne: '' },
+      fcmTokens: { $exists: true, $not: { $size: 0 } },
     });
 
     let totalSent = 0;
@@ -55,7 +69,7 @@ exports.deadlineCheck = async (req, res) => {
       const relevantUsers = users.filter((u) =>
         u.savedEvents.some((id) => id.toString() === event._id.toString())
       );
-      const tokens = relevantUsers.map((u) => u.fcmToken).filter(Boolean);
+      const tokens = relevantUsers.flatMap((u) => u.fcmTokens).filter(Boolean);
       if (tokens.length === 0) continue;
 
       const message = {
@@ -71,7 +85,8 @@ exports.deadlineCheck = async (req, res) => {
 
     res.json({ message: 'Deadline check complete', notified: totalSent });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('deadlineCheck error:', err.message);
+    res.status(500).json({ message: 'Failed to check deadlines' });
   }
 };
 
@@ -88,7 +103,8 @@ exports.getUserNotifications = async (req, res) => {
       
     res.json(notifications);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('getUserNotifications error:', err.message);
+    res.status(500).json({ message: 'Failed to fetch notifications' });
   }
 };
 
@@ -105,6 +121,7 @@ exports.markAsRead = async (req, res) => {
     
     res.json({ message: 'Notifications marked as read' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('markAsRead error:', err.message);
+    res.status(500).json({ message: 'Failed to mark notifications' });
   }
 };
