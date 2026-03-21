@@ -9,6 +9,7 @@ import AdminPanel from './pages/AdminPanel';
 import Profile from './pages/Profile';
 import Teams from './pages/Teams';
 import TeamDetail from './pages/TeamDetail';
+import NotificationBanner from './components/NotificationBanner';
 
 function ProtectedRoute({ children }) {
   const { currentUser, loading } = useAuth();
@@ -34,8 +35,10 @@ function AppRoutes() {
   }
 
   return (
-    <Routes>
-      <Route path="/" element={currentUser ? <Navigate to="/dashboard" /> : <Landing />} />
+    <>
+      <NotificationBanner />
+      <Routes>
+        <Route path="/" element={currentUser ? <Navigate to="/dashboard" /> : <Landing />} />
       <Route path="/login" element={currentUser ? <Navigate to="/dashboard" /> : <Login />} />
       <Route path="/dashboard" element={<ProtectedRoute><Home /></ProtectedRoute>} />
       <Route path="/event/:slug" element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
@@ -46,6 +49,7 @@ function AppRoutes() {
       <Route path="/teams/:id" element={<ProtectedRoute><TeamDetail /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
+    </>
   );
 }
 

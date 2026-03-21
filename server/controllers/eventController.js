@@ -128,6 +128,16 @@ exports.deleteEvent = async (req, res) => {
       }
     }
     
+    // Remove from all users' savedEvents
+    await User.updateMany(
+      { savedEvents: event._id },
+      { $pull: { savedEvents: event._id } }
+    );
+
+    // Clean up related notifications
+    const Notification = require('../models/Notification');
+    await Notification.deleteMany({ link: `/event/${event.slug}` });
+    
     await Event.findByIdAndDelete(req.params.id);
     res.json({ message: 'Event deleted' });
   } catch (err) {

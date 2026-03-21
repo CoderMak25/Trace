@@ -60,6 +60,12 @@ export default function EventCard({ event, index = 0, canEdit = false, onEdit })
             <Icon icon="solar:users-group-rounded-linear" className="text-xs" /> {event.teamName}
           </span>
         )}
+        {event.registered && event.selectionStatus && event.selectionStatus !== 'Pending' && (
+          <span className={`inline-flex items-center gap-1 text-xs border border-ink px-2 py-0.5 font-heading mb-2 ml-2 shadow-[1px_1px_0_0_#2d2d2d] blob-2 ${event.selectionStatus === 'Selected' ? 'bg-[#dcfce7] text-[#166534]' : 'bg-red/20 text-red'}`}>
+            <Icon icon={event.selectionStatus === 'Selected' ? 'solar:verified-check-bold' : 'solar:close-circle-bold'} className="text-xs" />
+            {event.selectionStatus}
+          </span>
+        )}
         <p className="text-base text-ink/80 line-clamp-2">{event.description}</p>
       </Link>
 

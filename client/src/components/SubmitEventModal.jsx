@@ -18,6 +18,7 @@ export default function SubmitEventModal({ isOpen, onClose, teamId = null, initi
     mode: 'In-Person',
     prizePool: '',
     description: '',
+    selectionStatus: 'Pending',
   };
   const [formData, setFormData] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
@@ -40,6 +41,7 @@ export default function SubmitEventModal({ isOpen, onClose, teamId = null, initi
         mode: initialData.mode || 'In-Person',
         prizePool: initialData.prizePool || '',
         description: initialData.description || '',
+        selectionStatus: initialData.selectionStatus || 'Pending',
       });
     } else if (isOpen && !initialData) {
       setFormData(emptyForm);
@@ -254,8 +256,20 @@ export default function SubmitEventModal({ isOpen, onClose, teamId = null, initi
                       Already Registered
                     </label>
                   </div>
-                  {!formData.registered && (
-                    <div className="flex flex-col gap-1 animate-fade-in">
+                  {formData.registered ? (
+                    <div className="flex flex-col gap-1 animate-fade-in mt-2">
+                      <label className="font-heading text-sm tracking-tight ml-2 text-ink/70">Selection Status</label>
+                      <select
+                        name="selectionStatus" value={formData.selectionStatus} onChange={handleChange}
+                        className={`${inputCls} appearance-none cursor-pointer blob-3 text-base`}
+                      >
+                        <option value="Pending">Pending (Awaiting Results)</option>
+                        <option value="Selected">Selected 🎉</option>
+                        <option value="Rejected">Not Selected ❌</option>
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-1 animate-fade-in mt-2">
                       <label className="font-heading text-sm tracking-tight ml-2 text-ink/70">Registration Deadline</label>
                       <input
                         type="date" name="registrationDeadline" value={formData.registrationDeadline} onChange={handleChange}

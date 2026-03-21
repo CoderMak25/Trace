@@ -3,15 +3,16 @@ const User = require('../models/User');
 // POST /api/users/sync — create or update user on login
 exports.syncUser = async (req, res) => {
   try {
-    const { firebaseUID, email, displayName, photoURL } = req.body;
+    const { firebaseUID, email, displayName, photoURL, fcmToken } = req.body;
     let user = await User.findOne({ firebaseUID });
     if (user) {
       user.email = email;
       user.displayName = displayName;
       user.photoURL = photoURL;
+      if (fcmToken) user.fcmToken = fcmToken;
       await user.save();
     } else {
-      user = await User.create({ firebaseUID, email, displayName, photoURL });
+      user = await User.create({ firebaseUID, email, displayName, photoURL, fcmToken });
     }
     res.json(user);
   } catch (err) {

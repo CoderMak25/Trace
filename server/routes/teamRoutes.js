@@ -8,6 +8,8 @@ const {
   removeEventFromTeam,
   updateTeam,
   leaveTeam,
+  deleteTeam,
+  sendTeamAnnouncement,
 } = require('../controllers/teamController');
 const authMiddleware = require('../middleware/authMiddleware');
 
@@ -19,5 +21,7 @@ router.put('/:id', authMiddleware, updateTeam);
 router.put('/:id/add-event', authMiddleware, addEventToTeam);
 router.put('/:id/remove-event', authMiddleware, removeEventFromTeam);
 router.delete('/:id/leave', authMiddleware, leaveTeam);
+router.delete('/:id', authMiddleware, deleteTeam);
+router.post('/:id/announce', authMiddleware, sendTeamAnnouncement);
 
 module.exports = router;

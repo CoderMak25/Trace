@@ -1,23 +1,26 @@
-/* eslint-disable no-undef */
-importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js');
+importScripts('https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js');
 
-firebase.initializeApp({
-  apiKey: 'placeholder',
-  authDomain: 'placeholder',
-  projectId: 'placeholder',
-  storageBucket: 'placeholder',
-  messagingSenderId: 'placeholder',
-  appId: 'placeholder',
-});
+const firebaseConfig = {
+  apiKey: "AIzaSyBmkBXIYgglc7ZX5x3fzIqElUcNTJXlYAU",
+  authDomain: "trace-d2d17.firebaseapp.com",
+  projectId: "trace-d2d17",
+  storageBucket: "trace-d2d17.firebasestorage.app", // Added basic bucket format
+  messagingSenderId: "137845984533",
+  appId: "1:137845984533:web:50e1905c6d07f89a03ad1c"
+};
+
+firebase.initializeApp(firebaseConfig);
 
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  const { title, body } = payload.notification || {};
-  self.registration.showNotification(title || 'Trace', {
-    body: body || 'You have a new notification',
-    icon: '/vite.svg',
-    badge: '/vite.svg',
-  });
+  console.log('[firebase-messaging-sw.js] Received background message ', payload);
+  const notificationTitle = payload.notification.title;
+  const notificationOptions = {
+    body: payload.notification.body,
+    icon: '/vite.svg', // Assuming standard Vite icon or you can customize
+  };
+
+  self.registration.showNotification(notificationTitle, notificationOptions);
 });

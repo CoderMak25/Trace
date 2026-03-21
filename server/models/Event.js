@@ -18,6 +18,8 @@ const eventSchema = new mongoose.Schema({
   registrationLink: { type: String },
   description: { type: String },
   registered: { type: Boolean, default: false },
+  selectionStatus: { type: String, enum: ['Pending', 'Selected', 'Rejected'], default: 'Pending' },
+  notifiedMilestones: [{ type: String }],
   verified: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 });

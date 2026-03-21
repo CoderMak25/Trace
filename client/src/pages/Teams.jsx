@@ -111,6 +111,7 @@ export default function Teams() {
       setJoinSuccess(`Joined "${res.data.name}" successfully!`);
       setJoinCode('');
       await fetchTeams();
+      navigate('/teams/' + res.data._id);
     } catch (err) {
       setJoinError(err.response?.data?.message || 'Failed to join team');
     }

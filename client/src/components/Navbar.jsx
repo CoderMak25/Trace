@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './NotificationBell';
 
 export default function Navbar({ onSubmitClick }) {
   const { currentUser, logout } = useAuth();
@@ -69,6 +70,9 @@ export default function Navbar({ onSubmitClick }) {
                 Add Event
               </button>
             )}
+            
+            <NotificationBell />
+            
             <div className="relative group">
               <button className="w-10 h-10 bg-tan border-[3px] border-ink rounded-full shadow-[2px_2px_0_0_#2d2d2d] flex items-center justify-center hover:bg-blue hover:text-white transition-colors overflow-hidden">
                 {currentUser.photoURL ? (

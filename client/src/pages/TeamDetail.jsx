@@ -21,6 +21,9 @@ export default function TeamDetail() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editEvent, setEditEvent] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [announceModalOpen, setAnnounceModalOpen] = useState(false);
+  const [announceText, setAnnounceText] = useState('');
+  const [announcing, setAnnouncing] = useState(false);
 
   // Demo team
   const demoTeam = {
@@ -132,6 +135,29 @@ export default function TeamDetail() {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  async function handleAnnounce(e) {
+    e.preventDefault();
+    if (!announceText.trim()) return;
+    setAnnouncing(true);
+    try {
+      if (!currentUser?.isDemo) {
+        const token = await currentUser.getIdToken();
+        await axios.post(`/api/teams/${id}/announce`, { message: announceText }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+      setAnnounceText('');
+      setAnnounceModalOpen(false);
+      alert('Announcement pushed to team successfully!');
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Failed to send announcement');
+    } finally {
+      setAnnouncing(false);
+    }
+  }
+
+
   // Remove availableEvents computation that was used for inline picker
 
   // Team schedule sorted by date
@@ -198,6 +224,15 @@ export default function TeamDetail() {
               >
                 <Icon icon="solar:share-linear" /> Share Code
               </button>
+              {/* Announce (Leader Only) */}
+              {(team.owner?.email === currentUser?.email || team.owner?._id === userProfile?._id || team.owner === userProfile?._id || currentUser?.isDemo) && (
+                <button
+                  onClick={() => setAnnounceModalOpen(true)}
+                  className="bg-blue border-[3px] border-ink text-white px-4 py-2 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-3 flex items-center gap-2 font-heading text-sm"
+                >
+                  <Icon icon="solar:bell-bing-bold" /> Announce
+                </button>
+              )}
               {/* Add Event */}
               <button
                 onClick={() => setModalOpen(true)}
@@ -344,6 +379,37 @@ export default function TeamDetail() {
           </aside>
         </div>
       </div>
+
+      {/* Announce Modal */}
+      {announceModalOpen && (
+        <dialog open className="fixed inset-0 z-50 flex items-center justify-center bg-transparent w-full h-full">
+          <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm" onClick={() => setAnnounceModalOpen(false)} />
+          <div className="relative bg-white border-[3px] border-ink shadow-[8px_8px_0_0_#2d2d2d] max-w-sm w-full mx-4 p-6 blob-2 z-10 animate-fade-in"
+               style={{ backgroundImage: 'radial-gradient(#e5e0d8 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+            <button onClick={() => setAnnounceModalOpen(false)} className="absolute top-4 right-4 text-ink hover:text-red transition-colors bg-white rounded-full z-20">
+              <Icon icon="solar:close-circle-linear" className="text-3xl" />
+            </button>
+            <h2 className="font-heading text-2xl tracking-tight text-ink mb-2">Push Announcement</h2>
+            <p className="text-ink/60 text-sm mb-4">Send a push notification to all team members.</p>
+            <form onSubmit={handleAnnounce} className="flex flex-col gap-4">
+              <textarea
+                required
+                value={announceText}
+                onChange={(e) => setAnnounceText(e.target.value)}
+                placeholder="Type your message..."
+                rows={3}
+                className="w-full bg-white border-[3px] border-ink p-3 text-lg focus:outline-none focus:border-blue shadow-[2px_2px_0_0_#2d2d2d] blob-1 resize-none line-clamp-3"
+              />
+              <button
+                type="submit" disabled={announcing}
+                className="bg-blue border-[3px] border-ink text-white text-lg font-heading tracking-tight px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:-translate-y-1 hover:shadow-[6px_6px_0_0_#2d2d2d] transition-all duration-100 blob-3 disabled:opacity-60"
+              >
+                {announcing ? 'Sending...' : 'Send Push'}
+              </button>
+            </form>
+          </div>
+        </dialog>
+      )}
 
       <SubmitEventModal 
         isOpen={modalOpen} 

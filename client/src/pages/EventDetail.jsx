@@ -144,11 +144,26 @@ export default function EventDetail() {
 
           {/* Registration Status */}
           {event.registered !== undefined && (
-            <div className="mb-6">
+            <div className="mb-6 flex flex-wrap gap-4">
               <div className={`inline-flex items-center gap-2 border-[3px] border-ink px-4 py-2 font-heading text-lg shadow-[3px_3px_0_0_#2d2d2d] blob-2 ${event.registered ? 'bg-green-100 text-green-800' : 'bg-yellow text-ink'}`}>
                 <Icon icon={event.registered ? 'solar:check-circle-bold' : 'solar:clock-circle-linear'} />
                 {event.registered ? 'Registered ✓' : 'Not Registered'}
               </div>
+              
+              {event.registered && event.selectionStatus && (
+                 <div className={`inline-flex items-center gap-2 border-[3px] border-ink px-4 py-2 font-heading text-lg shadow-[3px_3px_0_0_#2d2d2d] blob-3 ${
+                   event.selectionStatus === 'Selected' ? 'bg-[#dcfce7] text-[#166534]' : 
+                   event.selectionStatus === 'Rejected' ? 'bg-red/20 text-red' : 
+                   'bg-tan text-ink/70'
+                 }`}>
+                   <Icon icon={
+                     event.selectionStatus === 'Selected' ? 'solar:verified-check-bold' : 
+                     event.selectionStatus === 'Rejected' ? 'solar:close-circle-bold' : 
+                     'solar:hourglass-linear'
+                   } />
+                   Status: {event.selectionStatus}
+                 </div>
+              )}
             </div>
           )}
 

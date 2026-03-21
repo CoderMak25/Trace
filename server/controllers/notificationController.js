@@ -1,5 +1,6 @@
 const admin = require('../config/firebase');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 // POST /api/notifications/send — admin send push to all
 exports.sendToAll = async (req, res) => {
@@ -69,6 +70,40 @@ exports.deadlineCheck = async (req, res) => {
     }
 
     res.json({ message: 'Deadline check complete', notified: totalSent });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// GET /api/notifications/my-notifications
+exports.getUserNotifications = async (req, res) => {
+  try {
+    const user = await User.findOne({ firebaseUID: req.user.uid });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    // Fetch last 30 notifications for user
+    const notifications = await Notification.find({ userId: user._id })
+      .sort({ createdAt: -1 })
+      .limit(30);
+      
+    res.json(notifications);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PUT /api/notifications/my-notifications/read
+exports.markAsRead = async (req, res) => {
+  try {
+    const user = await User.findOne({ firebaseUID: req.user.uid });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    await Notification.updateMany(
+      { userId: user._id, read: false },
+      { $set: { read: true } }
+    );
+    
+    res.json({ message: 'Notifications marked as read' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
