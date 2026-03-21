@@ -20,10 +20,13 @@ exports.syncUser = async (req, res) => {
       user.email = email;
       user.displayName = displayName || user.displayName;
       user.photoURL = photoURL || user.photoURL;
-      if (fcmToken && typeof fcmToken === 'string' && fcmToken.length > 20 && !user.fcmTokens.includes(fcmToken)) {
-        user.fcmTokens.push(fcmToken);
-        if (user.fcmTokens.length > 10) {
-          user.fcmTokens = user.fcmTokens.slice(-10);
+      if (fcmToken && typeof fcmToken === 'string' && fcmToken.length > 20) {
+        // Remove this token if it already exists, then add to front
+        user.fcmTokens = user.fcmTokens.filter(t => t !== fcmToken);
+        user.fcmTokens.unshift(fcmToken);
+        // Keep only the latest 3 tokens (multi-device support)
+        if (user.fcmTokens.length > 3) {
+          user.fcmTokens = user.fcmTokens.slice(0, 3);
         }
       }
       await user.save();

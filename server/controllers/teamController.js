@@ -402,16 +402,40 @@ exports.sendTeamAnnouncement = async (req, res) => {
 
     const response = await admin.messaging().sendEachForMulticast(payload);
     console.log(`[Announce] FCM Result — Success: ${response.successCount}, Fail: ${response.failureCount}`);
+
+    // Auto-clean invalid tokens from DB
+    const tokensToRemove = [];
     if (response.failureCount > 0) {
       response.responses.forEach((resp, idx) => {
         if (!resp.success) {
-          console.error(`  Token[${idx}] failed:`, resp.error?.code, resp.error?.message);
+          const code = resp.error?.code || 'unknown';
+          console.error(`  Token[${idx}] failed:`, code, resp.error?.message);
+          // Remove tokens that are permanently invalid
+          if (['messaging/invalid-registration-token', 'messaging/registration-token-not-registered',
+               'messaging/invalid-argument', 'messaging/unregistered'].includes(code)) {
+            tokensToRemove.push(tokens[idx]);
+          }
         }
       });
     }
 
+    // Remove stale tokens from users in the DB
+    if (tokensToRemove.length > 0) {
+      console.log(`[Announce] Removing ${tokensToRemove.length} stale token(s) from DB`);
+      await User.updateMany(
+        { fcmTokens: { $in: tokensToRemove } },
+        { $pull: { fcmTokens: { $in: tokensToRemove } } }
+      );
+    }
+
+    const errorCodes = response.responses
+      .filter(r => !r.success)
+      .map(r => r.error?.code || 'unknown');
+
     apiCache.clear();
-    res.json({ message: `Announcement sent to ${response.successCount} member(s)! ${response.failureCount > 0 ? `(${response.failureCount} failed)` : ''}` });
+    res.json({
+      message: `Announcement sent to ${response.successCount} member(s)! ${response.failureCount > 0 ? `(${response.failureCount} failed: ${[...new Set(errorCodes)].join(', ')})` : ''}`,
+    });
   } catch (err) {
     console.error('[Announce] Error:', err.message);
     res.status(500).json({ message: 'Failed to send announcement' });
