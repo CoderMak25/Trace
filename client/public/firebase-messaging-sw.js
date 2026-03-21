@@ -14,11 +14,22 @@ firebase.initializeApp(firebaseConfig);
 
 const messaging = firebase.messaging();
 
-messaging.onBackgroundMessage((payload) => {
+// Force immediate update for all users (don't wait for tabs to close)
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
+messaging.onBackgroundMessage(function(payload) {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  const notificationTitle = payload.data?.title || payload.notification?.title || 'Trace';
-  const notificationOptions = {
-    body: payload.data?.body || payload.notification?.body || '',
+  var data = payload.data || {};
+  var notification = payload.notification || {};
+  var notificationTitle = data.title || notification.title || 'Trace';
+  var notificationOptions = {
+    body: data.body || notification.body || '',
     icon: '/vite.svg',
     tag: 'trace-bg-notif',
   };
