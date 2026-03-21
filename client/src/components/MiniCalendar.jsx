@@ -31,8 +31,18 @@ export default function MiniCalendar({ events, title = 'Calendar' }) {
   const eventsByDay = useMemo(() => {
     const map = {};
     events.forEach((e) => {
-      const start = new Date(e.date);
-      const end = e.endDate ? new Date(e.endDate) : start;
+      let start = new Date(e.date);
+      // Normalize midnight start (less common but possible)
+      if (start.getHours() === 0 && start.getMinutes() === 0 && start.getSeconds() === 0 && e.source === 'unstop') {
+        // We don't necessarily want to shift the START back, but for END it's crucial. 
+        // Actually, if Unstop says Start is 30th 00:00, it usually means it starts ON the 30th.
+        // But if End is 30th 00:00, it means it ends AT the start of the 30th (so 29th is last day).
+      }
+
+      let end = e.endDate ? new Date(e.endDate) : start;
+      if (e.source === 'unstop' && end.getHours() === 0 && end.getMinutes() === 0 && end.getSeconds() === 0) {
+        end = new Date(end.getTime() - 1000);
+      }
 
       // Iterate through each day from start to end
       const cursor = new Date(start);
@@ -50,7 +60,11 @@ export default function MiniCalendar({ events, title = 'Calendar' }) {
 
       // Also add to registrationDeadline day if it exists
       if (e.registrationDeadline) {
-        const rDate = new Date(e.registrationDeadline);
+        let rDate = new Date(e.registrationDeadline);
+        // Normalize midnight deadlines
+        if (rDate.getHours() === 0 && rDate.getMinutes() === 0 && rDate.getSeconds() === 0) {
+          rDate = new Date(rDate.getTime() - 1000);
+        }
         if (rDate.getMonth() === month && rDate.getFullYear() === year) {
           const rDay = rDate.getDate();
           if (!map[rDay]) map[rDay] = [];
@@ -93,8 +107,12 @@ export default function MiniCalendar({ events, title = 'Calendar' }) {
     const dayEvents = eventsByDay[day] || [];
     let isStart = false, isEnd = false, isDeadline = false;
     for (const ev of dayEvents) {
-      const startD = new Date(ev.date);
-      const endD = ev.endDate ? new Date(ev.endDate) : startD;
+      let startD = new Date(ev.date);
+      let endD = ev.endDate ? new Date(ev.endDate) : startD;
+      
+      if (ev.source === 'unstop' && endD.getHours() === 0 && endD.getMinutes() === 0 && endD.getSeconds() === 0) {
+        endD = new Date(endD.getTime() - 1000);
+      }
       
       const isDayStart = startD.getDate() === day && startD.getMonth() === month && startD.getFullYear() === year;
       const isDayEnd = endD.getDate() === day && endD.getMonth() === month && endD.getFullYear() === year;
@@ -108,7 +126,10 @@ export default function MiniCalendar({ events, title = 'Calendar' }) {
       }
 
       if (ev.registrationDeadline) {
-        const rD = new Date(ev.registrationDeadline);
+        let rD = new Date(ev.registrationDeadline);
+        if (rD.getHours() === 0 && rD.getMinutes() === 0 && rD.getSeconds() === 0) {
+          rD = new Date(rD.getTime() - 1000);
+        }
         if (rD.getDate() === day && rD.getMonth() === month && rD.getFullYear() === year) isDeadline = true;
       }
     }
@@ -235,7 +256,7 @@ export default function MiniCalendar({ events, title = 'Calendar' }) {
     <dialog open className="fixed inset-0 z-50 flex items-center justify-center bg-transparent w-full h-full">
       <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm" onClick={() => setExpanded(false)} />
       <div
-        className="relative bg-white border-[3px] border-ink shadow-[8px_8px_0_0_#2d2d2d] w-full max-w-4xl mx-4 blob-1 animate-fade-in z-10 max-h-[90vh] flex flex-col"
+        className="relative bg-white border-[3px] border-ink shadow-[8px_8px_0_0_#2d2d2d] w-full max-w-4xl mx-2 md:mx-4 blob-1 animate-fade-in z-10 max-h-[95vh] flex flex-col"
         style={{ backgroundImage: 'radial-gradient(#e5e0d8 1px, transparent 1px)', backgroundSize: '20px 20px' }}
       >
         {/* Pin */}
@@ -249,7 +270,7 @@ export default function MiniCalendar({ events, title = 'Calendar' }) {
         </button>
 
         {/* Scrollable content */}
-        <div className="overflow-y-auto p-6 md:p-8 flex-1" style={{ scrollbarWidth: 'thin', scrollbarColor: '#2d2d2d #e5e0d8' }}>
+        <div className="overflow-y-auto p-4 md:p-8 flex-1" style={{ scrollbarWidth: 'thin', scrollbarColor: '#2d2d2d #e5e0d8' }}>
           {/* Header */}
           <div className="flex items-center justify-between mb-6 pr-8">
             <button onClick={prevMonth} className="border-[3px] border-ink p-2 shadow-[2px_2px_0_0_#2d2d2d] hover:bg-tan transition-colors blob-2">

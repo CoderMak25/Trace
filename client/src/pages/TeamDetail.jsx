@@ -254,7 +254,7 @@ export default function TeamDetail() {
     <div className="min-h-screen flex flex-col">
       <Navbar onSubmitClick={() => {}} />
 
-      <div className="w-full max-w-6xl mx-auto px-6 py-8">
+      <div className="w-full max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Back */}
         <Link to="/teams" className="text-ink/60 hover:text-ink flex items-center gap-2 text-lg transition-colors mb-6">
           <Icon icon="solar:arrow-left-linear" /> All Teams
@@ -277,7 +277,7 @@ export default function TeamDetail() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 md:gap-3 flex-wrap">
               {/* Share Code */}
               <button
                 onClick={() => setShowCode(!showCode)}
@@ -321,7 +321,7 @@ export default function TeamDetail() {
                 </div>
                 <button
                   onClick={copyCode}
-                  className={`border-[3px] border-ink px-4 py-3 shadow-[2px_2px_0_0_#2d2d2d] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-1 flex justify-center items-center gap-2 ${copied ? 'bg-green-500 text-white' : 'bg-white'}`}
+                  className={`border-[3px] border-ink px-4 py-3 shadow-[2px_2px_0_0_#2d2d2d] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-1 flex justify-center items-center gap-2 shrink-0 ${copied ? 'bg-green-500 text-white' : 'bg-white'}`}
                 >
                   <Icon icon={copied ? 'solar:check-circle-bold' : 'solar:copy-linear'} />
                   {copied ? 'Copied!' : 'Copy'}
@@ -425,16 +425,16 @@ export default function TeamDetail() {
                         <h3 className="font-heading text-xl tracking-tight truncate">{item.event.name}</h3>
                         <p className="text-sm text-ink/60 truncate mt-1">{item.event.organizer} {item.event.city ? `• ${item.event.city}` : ''}</p>
                       </Link>
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
                         <button
                           onClick={() => markSelectedEventInterested(item.event._id)}
-                          className="bg-blue border-[2px] border-ink text-white px-3 py-1 text-sm font-heading shadow-[2px_2px_0_0_#2d2d2d] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-1"
+                          className="bg-blue border-[2px] border-ink text-white px-3 py-1.5 text-sm font-heading shadow-[2px_2px_0_0_#2d2d2d] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-1 whitespace-nowrap"
                         >
                           Mark Interested
                         </button>
                         <button
                           onClick={() => removeSelectedEvent(item.event._id)}
-                          className="text-red hover:underline text-sm"
+                          className="text-red hover:underline text-sm font-heading py-1"
                         >
                           Remove
                         </button>
@@ -465,7 +465,7 @@ export default function TeamDetail() {
                         <span className="font-heading text-sm">{m.displayName?.charAt(0) || '?'}</span>
                       )}
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm font-heading truncate">
                         {m.displayName || 'Unknown'}
                         {m.email === team.owner?.email && (

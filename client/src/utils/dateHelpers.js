@@ -10,24 +10,38 @@ export function formatDate(dateStr) {
 
 export function formatDateRange(start, end) {
   if (!start) return '';
-  const s = new Date(start);
-  if (!end || start === end) return formatDate(start);
-  const e = new Date(end);
+  let s = new Date(start);
+  let e = end ? new Date(end) : s;
+
+  // Normalized midnight to previous day
+  if (e.getHours() === 0 && e.getMinutes() === 0 && e.getSeconds() === 0 && e.getTime() !== s.getTime()) {
+    e = new Date(e.getTime() - 1000);
+  }
+
+  if (s.getTime() === e.getTime() || !end) return formatDate(s);
+  
   const sameMonth = s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear();
   if (sameMonth) {
     return `${s.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })} - ${e.getDate()}, ${e.getFullYear()}`;
   }
-  return `${formatDate(start)} - ${formatDate(end)}`;
+  return `${formatDate(s)} - ${formatDate(e)}`;
 }
 
 export function daysUntil(dateStr) {
   if (!dateStr) return null;
   const now = new Date();
-  now.setHours(0, 0, 0, 0);
   const target = new Date(dateStr);
-  target.setHours(0, 0, 0, 0);
-  const diff = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
-  return diff;
+  
+  // Normalize midnight deadlines (00:00:00) to the previous day's end
+  // This aligns 'Ends on Monday 00:00' with 'Ends Today' on Sunday.
+  if (target.getHours() === 0 && target.getMinutes() === 0 && target.getSeconds() === 0) {
+    target.setSeconds(-1);
+  }
+
+  const d1 = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const d2 = Date.UTC(target.getFullYear(), target.getMonth(), target.getDate());
+  
+  return Math.floor((d2 - d1) / (1000 * 60 * 60 * 24));
 }
 
 export function deadlineLabel(dateStr) {
