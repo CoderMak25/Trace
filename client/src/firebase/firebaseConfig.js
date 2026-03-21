@@ -23,7 +23,24 @@ export async function getMessagingToken(vapidKey) {
   try {
     // Explicitly register the service worker so Firebase knows where to route pushes
     const swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-    console.log('[FCM] Service Worker registered:', swRegistration.scope);
+    
+    // Wait for the service worker to become active before subscribing
+    if (swRegistration.installing) {
+      await new Promise((resolve) => {
+        swRegistration.installing.addEventListener('statechange', (e) => {
+          if (e.target.state === 'activated') resolve();
+        });
+      });
+    } else if (swRegistration.waiting) {
+      await new Promise((resolve) => {
+        swRegistration.waiting.addEventListener('statechange', (e) => {
+          if (e.target.state === 'activated') resolve();
+        });
+      });
+    }
+    // If already active, no wait needed
+    
+    console.log('[FCM] Service Worker active:', swRegistration.active?.state);
 
     const currentToken = await getToken(m, { vapidKey, serviceWorkerRegistration: swRegistration });
     if (currentToken) {

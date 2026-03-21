@@ -12,6 +12,22 @@ export async function requestNotificationPermission() {
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
       const swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+
+      // Wait for the service worker to become active
+      if (swRegistration.installing) {
+        await new Promise((resolve) => {
+          swRegistration.installing.addEventListener('statechange', (e) => {
+            if (e.target.state === 'activated') resolve();
+          });
+        });
+      } else if (swRegistration.waiting) {
+        await new Promise((resolve) => {
+          swRegistration.waiting.addEventListener('statechange', (e) => {
+            if (e.target.state === 'activated') resolve();
+          });
+        });
+      }
+
       const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swRegistration });
       return token;
     }
