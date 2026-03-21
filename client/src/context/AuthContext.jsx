@@ -30,7 +30,11 @@ export function AuthProvider({ children }) {
         if (Notification.permission === 'granted') {
           try {
             const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-            if (vapidKey) fcmToken = await getMessagingToken(vapidKey);
+            if (vapidKey) {
+              const reg = await navigator.serviceWorker.getRegistration();
+              if (reg) await reg.update(); // Force browser to bypass cache & check for SW updates
+              fcmToken = await getMessagingToken(vapidKey);
+            }
           } catch (e) {
             console.error('[Sync] FCM token error:', e);
           }
