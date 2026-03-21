@@ -7,6 +7,7 @@ import {
   signOut,
 } from 'firebase/auth';
 import { auth, googleProvider, getMessagingToken } from '../firebase/firebaseConfig';
+import { requestNotificationPermission, onForegroundMessage } from '../firebase/messaging';
 import axios from 'axios';
 
 const AuthContext = createContext();
@@ -73,6 +74,38 @@ export function AuthProvider({ children }) {
     });
     return unsub;
   }, []);
+
+  // Single foreground push listener — shows exactly ONE browser notification
+  useEffect(() => {
+    if (!currentUser) return;
+
+    let unsubscribe;
+    onForegroundMessage((payload) => {
+      console.log('[Foreground FCM]', payload);
+      const title = payload.notification?.title || payload.data?.title || 'Trace';
+      const body = payload.notification?.body || payload.data?.body || '';
+
+      if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+          new Notification(title, {
+            body,
+            icon: '/vite.svg',
+            tag: 'trace-notif', // Same tag = replaces instead of stacking
+          });
+        } catch (e) {
+          navigator.serviceWorker.ready.then((reg) => {
+            reg.showNotification(title, { body, icon: '/vite.svg', tag: 'trace-notif' });
+          });
+        }
+      }
+    }).then((unsub) => {
+      unsubscribe = unsub;
+    });
+
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, [currentUser]);
 
   // Auth methods
   function googleSignIn() {
