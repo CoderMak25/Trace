@@ -24,8 +24,6 @@ self.addEventListener('activate', (event) => {
 });
 
 messaging.onBackgroundMessage(function(payload) {
-  console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  
   // If the payload contains a 'notification' object, Firebase Web SDK automatically handles displaying it.
   // We only show it manually if it's a data-only payload.
   if (!payload.notification) {

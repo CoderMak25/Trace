@@ -85,7 +85,6 @@ export function AuthProvider({ children }) {
 
     let unsubscribe;
     onForegroundMessage((payload) => {
-      console.log('[Foreground FCM]', payload);
       const title = payload.data?.title || payload.notification?.title || 'Trace';
       const body = payload.data?.body || payload.notification?.body || '';
 

@@ -26,11 +26,9 @@ export async function getMessagingToken(vapidKey) {
     
     // Wait until the browser confirms a service worker is fully active
     const swRegistration = await navigator.serviceWorker.ready;
-    console.log('[FCM] Service Worker ready:', swRegistration.active?.state);
 
     const currentToken = await getToken(m, { vapidKey, serviceWorkerRegistration: swRegistration });
     if (currentToken) {
-      console.log('[FCM] Token obtained:', currentToken.substring(0, 20) + '...');
       return currentToken;
     } else {
       console.warn('No registration token available. Request permission to generate one.');
