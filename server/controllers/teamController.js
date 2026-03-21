@@ -401,6 +401,10 @@ exports.sendTeamAnnouncement = async (req, res) => {
         type: 'team_announcement',
         link: `/teams/${team._id}`,
       },
+      webpush: {
+        headers: { Urgency: 'high' },
+        fcmOptions: { link: `/teams/${team._id}` }
+      },
       tokens: tokens,
     };
 
