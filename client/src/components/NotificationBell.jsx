@@ -4,9 +4,11 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { onForegroundMessage } from '../firebase/firebaseConfig';
+import { useNotifications } from '../hooks/useNotifications';
 
 export default function NotificationBell() {
   const { currentUser } = useAuth();
+  const { enableNotifications } = useNotifications(currentUser);
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const dropdownRef = useRef(null);
@@ -85,6 +87,11 @@ export default function NotificationBell() {
   const toggleDropdown = async () => {
     const newOpenState = !open;
     setOpen(newOpenState);
+
+    // Request native OS push permission if they haven't granted it yet!
+    if (newOpenState && 'Notification' in window && Notification.permission !== 'granted') {
+      enableNotifications();
+    }
 
     if (newOpenState) {
       // Also re-fetch latest
