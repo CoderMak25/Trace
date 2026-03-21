@@ -4,7 +4,7 @@ const admin = require('../config/firebaseAdmin');
 const mongoose = require('mongoose');
 
 // In-memory cache for ultra-fast GET responses
-const apiCache = new Map();
+const apiCache = require('../utils/cache');
 
 // Helper: validate ObjectId format
 function isValidId(id) {
