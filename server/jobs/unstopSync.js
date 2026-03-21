@@ -1,5 +1,6 @@
 const axios = require('axios');
 const Event = require('../models/Event');
+const slugify = require('../utils/slugify');
 
 const UNSTOP_URL = 'https://unstop.com/api/public/opportunity/search-result';
 const PER_PAGE = 50;
@@ -107,10 +108,16 @@ async function syncAllUnstopEvents() {
         const mappedEvent = mapUnstopToEvent(rawEvent);
         if (!mappedEvent.registrationLink) continue;
 
-        const existing = await Event.findOneAndUpdate(
+        const existing = await Event.findOne({ registrationLink: mappedEvent.registrationLink }).lean();
+        
+        if (!existing || !existing.slug) {
+          mappedEvent.slug = slugify(mappedEvent.name);
+        }
+
+        const res = await Event.findOneAndUpdate(
           { registrationLink: mappedEvent.registrationLink },
           { $set: mappedEvent },
-          { upsert: true, new: false }
+          { upsert: true, new: true }
         ).lean();
 
         if (existing) updated += 1;
