@@ -178,7 +178,20 @@ exports.removeEventFromTeam = async (req, res) => {
     team.events = team.events.filter((id) => id.toString() !== eventId);
     await team.save();
 
-    res.json({ message: 'Event removed from team schedule' });
+    // Cascading delete the actual event since it was removed from the team
+    const Event = require('../models/Event');
+    const event = await Event.findById(eventId);
+    if (event && event.team && event.team.toString() === team._id.toString()) {
+      await User.updateMany(
+        { savedEvents: event._id },
+        { $pull: { savedEvents: event._id } }
+      );
+      const Notification = require('../models/Notification');
+      await Notification.deleteMany({ link: `/event/${event.slug}` });
+      await Event.findByIdAndDelete(eventId);
+    }
+
+    res.json({ message: 'Event permanently deleted from team schedule' });
   } catch (err) {
     console.error('removeEventFromTeam error:', err.message);
     res.status(500).json({ message: 'Failed to remove event' });

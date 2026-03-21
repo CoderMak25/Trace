@@ -30,6 +30,11 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Root URL handler (friendly message instead of 404)
+app.get('/', (req, res) => {
+  res.send('Trace API is running. Please use /api for endpoints.');
+});
+
 const PORT = process.env.PORT || 5000;
 
 async function start() {
