@@ -1,21 +1,54 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export function useEvents(teamId = null) {
   const { currentUser } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isFirstRender = useRef(true);
+
+  // Initialize filters from URL query parameters
+  const [filters, setFilters] = useState(() => {
+    const params = new URLSearchParams(location.search);
+    return {
+      search: params.get('search') || '',
+      mode: params.get('mode') || '',
+      category: params.get('category') || '',
+      city: params.get('city') || '',
+      source: params.get('source') || '',
+    };
+  });
+
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState(null);
-  const [filters, setFilters] = useState({
-    search: '',
-    mode: '',
-    category: '',
-    city: '',
-  });
+
+  // Sync filters to URL query parameters
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    const params = new URLSearchParams();
+    if (filters.search) params.set('search', filters.search);
+    if (filters.mode) params.set('mode', filters.mode);
+    if (filters.category) params.set('category', filters.category);
+    if (filters.city) params.set('city', filters.city);
+    if (filters.source) params.set('source', filters.source);
+
+    const queryString = params.toString();
+    const newPath = `${location.pathname}${queryString ? `?${queryString}` : ''}`;
+    
+    // Only navigate if the search string actually changed to avoid redundant history entries
+    if (location.search !== `?${queryString}` && (location.search !== '' || queryString !== '')) {
+      navigate(newPath, { replace: true });
+    }
+  }, [filters, navigate, location.pathname, location.search]);
 
   const fetchEvents = useCallback(async (targetPage = 1) => {
     if (!currentUser) {
@@ -32,6 +65,7 @@ export function useEvents(teamId = null) {
       if (filters.mode) params.append('mode', filters.mode);
       if (filters.category) params.append('category', filters.category);
       if (filters.city) params.append('city', filters.city);
+      if (filters.source) params.append('source', filters.source);
       if (teamId) params.append('teamId', teamId);
       
       params.append('page', targetPage);

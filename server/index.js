@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { syncAllUnstopEvents } = require('./jobs/unstopSync');
+const { syncAllDevfolioEvents } = require('./jobs/devfolioSync');
 const connectDB = require('./config/db');
 const startDeadlineNotifier = require('./jobs/deadlineNotifier');
 
@@ -53,8 +54,9 @@ async function start() {
   // Auto-sync Unstop events on startup
   try {
     await syncAllUnstopEvents();
+    await syncAllDevfolioEvents();
   } catch (err) {
-    console.error('Failed to sync Unstop on startup:', err);
+    console.error('Failed to sync events on startup:', err);
   }
 
   app.listen(PORT, () => {

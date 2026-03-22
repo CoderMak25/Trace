@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const Event = require('../models/Event');
 const User = require('../models/User');
 const { syncAllUnstopEvents, updateEventStatuses } = require('./unstopSync');
+const { syncAllDevfolioEvents, updateDevfolioStatuses } = require('./devfolioSync');
 const { sendPush } = require('../utils/sendPush');
 let isFullSyncRunning = false;
 let isStatusSyncRunning = false;
@@ -81,8 +82,9 @@ function startDeadlineNotifier() {
     isFullSyncRunning = true;
     try {
       await syncAllUnstopEvents();
+      await syncAllDevfolioEvents();
     } catch (err) {
-      console.error('[CRON] Full Unstop sync failed:', err.message);
+      console.error('[CRON] Full sync failed:', err.message);
     } finally {
       isFullSyncRunning = false;
     }
@@ -93,6 +95,7 @@ function startDeadlineNotifier() {
     isStatusSyncRunning = true;
     try {
       await updateEventStatuses();
+      await updateDevfolioStatuses();
     } catch (err) {
       console.error('[CRON] Lightweight status sync failed:', err.message);
     } finally {

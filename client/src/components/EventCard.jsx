@@ -1,5 +1,5 @@
 import { Icon } from '@iconify/react';
-import { deadlineLabel, formatDateRange } from '../utils/dateHelpers';
+import { deadlineLabel, formatDateRange, formatDate } from '../utils/dateHelpers';
 import BookmarkButton from './BookmarkButton';
 import { Link } from 'react-router-dom';
 
@@ -11,6 +11,11 @@ const TAG_COLORS = {
   'Tech Fest': 'bg-white',
 };
 const CARD_BGS = ['bg-white', 'bg-white', 'bg-yellow'];
+const PLATFORM_BADGES = {
+  unstop: { label: 'Unstop', color: 'bg-orange-100 text-orange-600 border-orange-300' },
+  devfolio: { label: 'Devfolio', color: 'bg-blue-100 text-blue-600 border-blue-300' },
+  manual: { label: 'Trace', color: 'bg-indigo-100 text-indigo-600 border-indigo-300' },
+};
 
 export default function EventCard({ event, index = 0, canEdit = false, onEdit }) {
   const blobClass = CARD_STYLES[index % 3];
@@ -37,17 +42,24 @@ export default function EventCard({ event, index = 0, canEdit = false, onEdit })
         <span className={`border-2 border-ink px-3 py-1 text-xs ${tagBg} font-heading tracking-tight inline-block ${index % 2 === 0 ? 'rotate-1' : '-rotate-1'} ${CARD_STYLES[(index + 1) % 3]}`}>
           {mainCategory}
         </span>
-        <div className="flex gap-2 relative z-10">
-          {canEdit && (
-            <button
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onEdit) onEdit(event); }}
-              className="text-ink/40 hover:text-blue transition-colors p-1"
-              title="Edit Event"
-            >
-              <Icon icon="solar:pen-linear" className="text-xl" />
-            </button>
+        <div className="flex flex-col items-end gap-2 relative z-10">
+          <div className="flex gap-2">
+            {canEdit && (
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onEdit) onEdit(event); }}
+                className="text-ink/40 hover:text-blue transition-colors p-1"
+                title="Edit Event"
+              >
+                <Icon icon="solar:pen-linear" className="text-xl" />
+              </button>
+            )}
+            <BookmarkButton eventId={event._id} />
+          </div>
+          {event.source && PLATFORM_BADGES[event.source] && (
+            <span className={`text-[10px] uppercase font-heading px-2 py-0.5 border rounded-full shadow-[1px_1px_0_0_#2d2d2d] ${PLATFORM_BADGES[event.source].color}`}>
+              {PLATFORM_BADGES[event.source].label}
+            </span>
           )}
-          <BookmarkButton eventId={event._id} />
         </div>
       </div>
 
@@ -90,14 +102,35 @@ export default function EventCard({ event, index = 0, canEdit = false, onEdit })
       {/* Details */}
       <div className="flex flex-col gap-2.5 text-base mt-2">
         <div className="flex items-center gap-3">
-          <Icon icon="solar:users-group-rounded-linear" className="text-xl text-blue shrink-0" />
+          <Icon icon="solar:flag-2-linear" className="text-xl text-blue shrink-0" />
           <span className="truncate">{event.organizer}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <Icon icon="solar:users-group-rounded-linear" className="text-xl text-purple-600 shrink-0" />
+          <span className="truncate">
+            {event.teamSize ? (
+              event.teamSize.min === event.teamSize.max
+                ? `Team of ${event.teamSize.min}`
+                : `Team of ${event.teamSize.min}-${event.teamSize.max}`
+            ) : 'Individuals / Teams'}
+          </span>
         </div>
         <div className="flex items-center gap-3">
           <Icon icon="solar:calendar-linear" className="text-xl text-red shrink-0" />
           <span className="truncate">
-            {event.source === 'unstop' ? <span className="font-heading text-xs text-red mr-1 uppercase">End Date:</span> : ''}
-            {formatDateRange(event.date, event.endDate)}
+            <span className="font-heading text-xs text-red mr-1 uppercase">
+              {event.source === 'unstop' || event.source === 'devfolio' ? 'End Date:' : (event.endDate && event.endDate !== event.date ? 'Duration:' : 'Event Date:')}
+            </span>
+            {event.source === 'unstop' || event.source === 'devfolio'
+              ? formatDate(event.endDate || event.date)
+              : formatDateRange(event.date, event.endDate || event.eventEnd)}
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <Icon icon="solar:alarm-linear" className="text-xl text-ink/60 shrink-0" />
+          <span className="truncate text-sm text-ink/60">
+            <span className="font-heading text-xs mr-1 uppercase">Reg. Deadline:</span>
+            {formatDate(event.registrationDeadline)}
           </span>
         </div>
         <div className="flex items-center gap-3">

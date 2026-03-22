@@ -117,8 +117,8 @@ export default function MiniCalendar({ events, title = 'Calendar' }) {
       const isDayStart = startD.getDate() === day && startD.getMonth() === month && startD.getFullYear() === year;
       const isDayEnd = endD.getDate() === day && endD.getMonth() === month && endD.getFullYear() === year;
 
-      if (ev.source === 'unstop') {
-        // For Unstop, we only want the date shown as an End point
+      if (ev.source === 'unstop' || ev.source === 'devfolio') {
+        // For synced events, we only want the date shown as an End point
         if (isDayEnd) isEnd = true;
       } else {
         if (isDayStart) isStart = true;
@@ -238,7 +238,7 @@ export default function MiniCalendar({ events, title = 'Calendar' }) {
                 <div key={ev._id} className="text-sm text-ink/80 flex items-center gap-2 py-1">
                   <span className={`w-2 h-2 rounded-full ${color.dot} shrink-0`} />
                   <span className="truncate">
-                    {ev.source === 'unstop' ? <span className="text-[10px] font-heading text-red mr-1 tracking-tighter uppercase opacity-70">Ends:</span> : ''}
+                    {(ev.source === 'unstop' || ev.source === 'devfolio') ? <span className="text-[10px] font-heading text-red mr-1 tracking-tighter uppercase opacity-70">Ends:</span> : ''}
                     {ev.name}
                   </span>
                   {ev.teamName && <span className="text-xs text-purple-500 ml-auto shrink-0">({ev.teamName})</span>}
@@ -370,7 +370,7 @@ export default function MiniCalendar({ events, title = 'Calendar' }) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="font-heading text-xl tracking-tight truncate">
-                            {ev.source === 'unstop' ? <span className="text-xs text-red mr-2 uppercase tracking-tight opacity-70">Ends:</span> : ''}
+                            {(ev.source === 'unstop' || ev.source === 'devfolio') ? <span className="text-xs text-red mr-2 uppercase tracking-tight opacity-70">Ends:</span> : ''}
                             {ev.name}
                           </h4>
                           {ev.teamName && (

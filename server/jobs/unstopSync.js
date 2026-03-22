@@ -39,7 +39,8 @@ function mapUnstopToEvent(unstopEvent) {
   return {
     name: unstopEvent?.title || 'Untitled Hackathon',
     organizer: unstopEvent?.organisation?.name || 'Unstop',
-    date: toDate(unstopEvent?.end_date),
+    date: toDate(unstopEvent?.start_date || unstopEvent?.end_date),
+    endDate: toDate(unstopEvent?.end_date),
     registrationDeadline: toDate(unstopEvent?.regnRequirements?.end_regn_dt),
     registrationStart: toDate(unstopEvent?.regnRequirements?.start_regn_dt),
     mode: normalizeMode(unstopEvent?.region),
@@ -105,7 +106,6 @@ async function syncAllUnstopEvents() {
     const events = await fetchUnstopPage(page);
     if (!events.length) break;
     pagesFetched += 1;
-
     totalFetched += events.length;
 
     for (const rawEvent of events) {
@@ -113,20 +113,18 @@ async function syncAllUnstopEvents() {
         const mappedEvent = mapUnstopToEvent(rawEvent);
         if (!mappedEvent.registrationLink) continue;
 
-        const existing = await Event.findOne({ registrationLink: mappedEvent.registrationLink }).lean();
-        
-        if (!existing || !existing.slug) {
-          mappedEvent.slug = slugify(mappedEvent.name);
+        // Skip Devfolio links in Unstop sync to avoid source collisions
+        if (mappedEvent.registrationLink.includes('devfolio.co')) {
+          continue;
         }
 
-        const res = await Event.findOneAndUpdate(
+        await Event.findOneAndUpdate(
           { registrationLink: mappedEvent.registrationLink },
           { $set: mappedEvent },
-          { upsert: true, new: true }
+          { upsert: true, returnDocument: 'after' }
         ).lean();
 
-        if (existing) updated += 1;
-        else added += 1;
+        updated += 1;
       } catch (eventErr) {
         console.error('[Unstop Sync] Event upsert failed:', eventErr.message);
       }

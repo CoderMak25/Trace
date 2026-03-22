@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useLocation } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { useAuth } from '../context/AuthContext';
-import { formatDateRange, deadlineLabel, daysUntil } from '../utils/dateHelpers';
+import { formatDateRange, deadlineLabel, daysUntil, formatDate } from '../utils/dateHelpers';
 import BookmarkButton from '../components/BookmarkButton';
 import Navbar from '../components/Navbar';
 import axios from 'axios';
@@ -10,6 +10,7 @@ import axios from 'axios';
 export default function EventDetail() {
   const { slug } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { currentUser, userProfile } = useAuth();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -111,9 +112,12 @@ export default function EventDetail() {
         <div className="flex-1 flex flex-col items-center justify-center">
           <Icon icon="solar:document-text-linear" className="text-6xl text-ink/30 mb-4" />
           <h2 className="font-heading text-3xl tracking-tight text-ink/60">Event not found</h2>
-          <Link to="/dashboard" className="mt-4 text-blue hover:underline text-lg flex items-center gap-2">
+          <button 
+            onClick={() => navigate(-1)} 
+            className="mt-4 text-blue hover:underline text-lg flex items-center gap-2 bg-transparent border-none cursor-pointer font-sans"
+          >
             <Icon icon="solar:arrow-left-linear" /> Back to events
-          </Link>
+          </button>
         </div>
       </div>
     );
@@ -192,9 +196,12 @@ export default function EventDetail() {
 
       <div className="w-full max-w-3xl mx-auto px-6 py-12">
         {/* Back */}
-        <Link to="/dashboard" className="text-ink/60 hover:text-ink flex items-center gap-2 text-lg transition-colors mb-8">
+        <button 
+          onClick={() => navigate(-1)} 
+          className="text-ink/60 hover:text-ink flex items-center gap-2 text-lg transition-colors mb-8 bg-transparent border-none cursor-pointer font-sans"
+        >
           <Icon icon="solar:arrow-left-linear" /> Back to events
-        </Link>
+        </button>
 
         {/* Card */}
         <article className="bg-white border-[3px] border-ink p-8 shadow-[8px_8px_0_0_#2d2d2d] relative blob-1 animate-fade-in"
@@ -239,9 +246,11 @@ export default function EventDetail() {
               <Icon icon="solar:calendar-linear" className="text-2xl text-red shrink-0" />
               <div>
                 <span className="text-ink/60 text-sm block">
-                  {event.source === 'unstop' ? 'End Date' : (isMultiDay ? 'Duration' : 'Date')}
+                  {event.source === 'unstop' || event.source === 'devfolio' ? 'End Date' : (isMultiDay ? 'Duration' : 'Date')}
                 </span>
-                {formatDateRange(event.date, event.endDate)}
+                {event.source === 'unstop' || event.source === 'devfolio' 
+                  ? (event.endDate ? formatDate(event.endDate) : formatDate(event.date))
+                  : formatDateRange(event.date, event.endDate)}
               </div>
             </div>
             <div className="flex items-center gap-3 text-lg">

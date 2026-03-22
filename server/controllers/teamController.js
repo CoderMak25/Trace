@@ -312,6 +312,43 @@ exports.leaveTeam = async (req, res) => {
   }
 };
 
+// DELETE /api/teams/:id/kick/:memberId — kick a member (owner only)
+exports.kickMember = async (req, res) => {
+  try {
+    if (!isValidId(req.params.id) || !isValidId(req.params.memberId)) {
+      return res.status(400).json({ message: 'Invalid team or member ID' });
+    }
+
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ message: 'Team not found' });
+
+    const user = await User.findOne({ firebaseUID: req.user.uid });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Only owner can kick
+    if (team.owner.toString() !== user._id.toString()) {
+      return res.status(403).json({ message: 'Only the team owner can kick members.' });
+    }
+
+    const memberIdToKick = req.params.memberId;
+    if (memberIdToKick === user._id.toString()) {
+      return res.status(400).json({ message: 'You cannot kick yourself. Use Leave instead.' });
+    }
+
+    team.members = team.members.filter(m => m.toString() !== memberIdToKick);
+    await team.save();
+
+    // Clean up notifications for that user regarding this team?
+    // (Optional, normally we leave history, but we could delete 'team_request' if we had them)
+
+    apiCache.clear();
+    res.json({ message: 'Member removed from team.' });
+  } catch (err) {
+    console.error('kickMember error:', err.message);
+    res.status(500).json({ message: 'Failed to kick member' });
+  }
+};
+
 // DELETE /api/teams/:id — delete team entirely (owner only)
 exports.deleteTeam = async (req, res) => {
   try {
@@ -356,6 +393,7 @@ async function cascadeDeleteTeam(team) {
   }
 
   await Notification.deleteMany({ link: `/teams/${team._id}` });
+  await TeamEvent.deleteMany({ team: team._id });
   await Team.findByIdAndDelete(team._id);
 }
 
@@ -584,7 +622,7 @@ exports.markTeamEventInterested = async (req, res) => {
     const mapping = await TeamEvent.findOneAndUpdate(
       { team: team._id, event: req.params.eventId },
       { $set: { status: 'Interested' } },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!mapping) {
@@ -618,5 +656,12 @@ async function hardDeleteEventEverywhere(eventId) {
   const Notification = require('../models/Notification');
   await Notification.deleteMany({ link: `/event/${event.slug}` });
 
-  await Event.findByIdAndDelete(event._id);
+  // ONLY delete the actual event document if it's a custom/team event.
+  // We MUST NOT delete synced events (Unstop/Devfolio) as they are global benchmarks.
+  if (event.source !== 'unstop' && event.source !== 'devfolio') {
+    await Event.findByIdAndDelete(event._id);
+    console.log(`[HardDelete] Custom event ${event.name} deleted from database.`);
+  } else {
+    console.log(`[HardDelete] Synced event ${event.name} unlinked from all teams, but preserved in database.`);
+  }
 }

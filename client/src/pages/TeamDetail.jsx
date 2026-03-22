@@ -244,7 +244,12 @@ export default function TeamDetail() {
         <div className="flex-1 flex flex-col items-center justify-center">
           <Icon icon="solar:users-group-rounded-linear" className="text-6xl text-ink/20 mb-4" />
           <h2 className="font-heading text-3xl text-ink/50">Team not found</h2>
-          <Link to="/teams" className="mt-4 text-blue hover:underline">Back to Teams</Link>
+          <button 
+            onClick={() => navigate(-1)} 
+            className="mt-4 text-blue hover:underline bg-transparent border-none cursor-pointer font-sans"
+          >
+            Back to Teams
+          </button>
         </div>
       </div>
     );
@@ -256,9 +261,12 @@ export default function TeamDetail() {
 
       <div className="w-full max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Back */}
-        <Link to="/teams" className="text-ink/60 hover:text-ink flex items-center gap-2 text-lg transition-colors mb-6">
+        <button 
+          onClick={() => navigate(-1)} 
+          className="text-ink/60 hover:text-ink flex items-center gap-2 text-lg transition-colors mb-6 bg-transparent border-none cursor-pointer font-sans"
+        >
           <Icon icon="solar:arrow-left-linear" /> All Teams
-        </Link>
+        </button>
 
         {/* Team Header */}
         <div className="bg-white border-[3px] border-ink p-6 md:p-8 shadow-[6px_6px_0_0_#2d2d2d] blob-1 relative mb-8 animate-fade-in"

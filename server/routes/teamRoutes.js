@@ -14,6 +14,7 @@ const {
   getTeamSelectedEvents,
   unselectEventForTeam,
   markTeamEventInterested,
+  kickMember,
 } = require('../controllers/teamController');
 const authMiddleware = require('../middleware/authMiddleware');
 const rateLimit = require('express-rate-limit');
@@ -33,6 +34,7 @@ router.put('/:id', authMiddleware, updateTeam);
 router.put('/:id/add-event', authMiddleware, addEventToTeam);
 router.put('/:id/remove-event', authMiddleware, removeEventFromTeam);
 router.delete('/:id/leave', authMiddleware, leaveTeam);
+router.delete('/:id/kick/:memberId', authMiddleware, kickMember);
 router.delete('/:id', authMiddleware, deleteTeam);
 router.post('/:id/announce', authMiddleware, announceLimiter, sendTeamAnnouncement);
 router.post('/:id/select-event', authMiddleware, selectEventForTeam);

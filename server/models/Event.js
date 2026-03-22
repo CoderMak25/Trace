@@ -7,6 +7,8 @@ const eventSchema = new mongoose.Schema({
   organizer: { type: String, required: true },
   date: { type: Date, required: true },
   endDate: { type: Date },
+  eventEnd: { type: Date },
+  durationHours: { type: Number },
   registrationDeadline: { type: Date },
   registrationStart: { type: Date },
   mode: { type: String, enum: ['offline', 'online', 'hybrid', 'Online', 'In-Person', 'Hybrid'], default: 'hybrid' },

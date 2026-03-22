@@ -87,7 +87,7 @@ export default function Home() {
     }
 
     events.forEach((e) => {
-      if (e.source !== 'unstop') {
+      if (e.source !== 'unstop' && e.source !== 'devfolio') {
         map.set(e._id, e);
       }
     });
@@ -122,8 +122,7 @@ export default function Home() {
   const upcomingCount = allCalendarEvents.filter((e) => daysUntil(e.date) >= 0).length;
   const onlineCount = allCalendarEvents.filter((e) => e.mode === 'Online').length;
   const inPersonCount = allCalendarEvents.filter((e) => e.mode === 'In-Person').length;
-  const userEvents = events.filter((e) => e.source !== 'unstop');
-  const unstopEvents = events.filter((e) => e.source === 'unstop');
+
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-x-hidden">
@@ -216,49 +215,25 @@ export default function Home() {
               </div>
             ) : viewMode === 'grid' ? (
               <>
-                {userEvents.length > 0 && (
-                  <div className="mb-12">
-                    <h3 className="font-heading text-2xl tracking-tight text-ink mb-6 flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue text-white rounded-full border-[2px] border-ink flex items-center justify-center shadow-[2px_2px_0_0_#2d2d2d]">
-                        <Icon icon="solar:users-group-rounded-linear" />
-                      </div>
-                      Community & Team Events
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                      {userEvents.map((event, i) => (
-                        <EventCard 
-                          key={event._id} 
-                          event={event} 
-                          index={i} 
-                          canEdit={event.owner === userProfile?._id || userProfile?.role === 'admin'}
-                          onEdit={(e) => { setEditEvent(e); setModalOpen(true); }}
-                        />
-                      ))}
+                <div className="mb-12">
+                  <h3 className="font-heading text-2xl tracking-tight text-ink mb-6 flex items-center gap-3">
+                    <div className={`w-8 h-8 ${!filters.source ? 'bg-red' : filters.source === 'unstop' ? 'bg-yellow' : 'bg-blue'} ${filters.source === 'unstop' ? 'text-ink' : 'text-white'} rounded-full border-[2px] border-ink flex items-center justify-center shadow-[2px_2px_0_0_#2d2d2d]`}>
+                      <Icon icon={!filters.source ? 'solar:planet-linear' : filters.source === 'unstop' ? 'solar:global-linear' : 'solar:code-bold'} />
                     </div>
+                    {!filters.source ? 'Discover All Events' : filters.source === 'unstop' ? 'Unstop Hackathons' : 'Devfolio Hackathons'}
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {events.map((event, i) => (
+                      <EventCard 
+                        key={event._id} 
+                        event={event} 
+                        index={i} 
+                        canEdit={event.owner === userProfile?._id || userProfile?.role === 'admin'}
+                        onEdit={(e) => { setEditEvent(e); setModalOpen(true); }}
+                      />
+                    ))}
                   </div>
-                )}
-
-                {unstopEvents.length > 0 && (
-                  <div className="mb-8">
-                    <h3 className="font-heading text-2xl tracking-tight text-ink mb-6 flex items-center gap-3">
-                      <div className="w-8 h-8 bg-yellow text-ink rounded-full border-[2px] border-ink flex items-center justify-center shadow-[2px_2px_0_0_#2d2d2d]">
-                        <Icon icon="solar:global-linear" />
-                      </div>
-                      Unstop Hackathons
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                      {unstopEvents.map((event, i) => (
-                        <EventCard 
-                          key={event._id} 
-                          event={event} 
-                          index={i} 
-                          canEdit={event.owner === userProfile?._id || userProfile?.role === 'admin'}
-                          onEdit={(e) => { setEditEvent(e); setModalOpen(true); }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
+                </div>
                 
                 {totalPages > 1 && (
                   <div className="mt-10 flex flex-wrap justify-center items-center gap-2">
@@ -303,87 +278,52 @@ export default function Home() {
               </>
             ) : (
               <>
-                {userEvents.length > 0 && (
-                  <div className="mb-10">
-                    <h3 className="font-heading text-xl tracking-tight text-ink mb-4 flex items-center gap-2">
-                      <Icon icon="solar:users-group-rounded-linear" className="text-blue" /> Community & Team Events
-                    </h3>
-                    <div className="flex flex-col gap-3">
-                      {userEvents.map((event) => (
-                        <Link
-                          key={event._id}
-                          to={`/event/${event.slug}`}
-                          className="bg-white border-[3px] border-ink p-4 shadow-[3px_3px_0_0_#2d2d2d] flex items-center gap-4 hover:shadow-[5px_5px_0_0_#2d2d2d] hover:-translate-y-0.5 transition-all blob-1 group"
-                        >
-                          <div className={`w-12 h-12 border-2 border-ink rounded-full flex items-center justify-center shrink-0 shadow-[2px_2px_0_0_#2d2d2d] ${event.category?.includes('Hackathon') ? 'bg-red text-white' : event.category?.includes('Workshop') ? 'bg-blue text-white' : 'bg-yellow text-ink'}`}>
-                            <Icon icon={event.category?.includes('Hackathon') ? 'solar:code-linear' : event.category?.includes('Workshop') ? 'solar:notebook-linear' : 'solar:cup-star-linear'} className="text-xl" />
+                <div className="mb-10">
+                  <h3 className="font-heading text-xl tracking-tight text-ink mb-4 flex items-center gap-2">
+                    <Icon 
+                      icon={!filters.source ? 'solar:planet-linear' : filters.source === 'unstop' ? 'solar:global-linear' : 'solar:code-bold'} 
+                      className={!filters.source ? 'text-red' : filters.source === 'unstop' ? 'text-yellow' : 'text-blue'} 
+                    /> 
+                    {!filters.source ? 'All Events' : filters.source === 'unstop' ? 'Unstop Hackathons' : 'Devfolio Hackathons'}
+                  </h3>
+                  <div className="flex flex-col gap-3">
+                    {events.map((event) => (
+                      <Link
+                        key={event._id}
+                        to={`/event/${event.slug}`}
+                        className="bg-white border-[3px] border-ink p-4 shadow-[3px_3px_0_0_#2d2d2d] flex items-center gap-4 hover:shadow-[5px_5px_0_0_#2d2d2d] hover:-translate-y-0.5 transition-all blob-1 group"
+                      >
+                        <div className={`w-12 h-12 border-2 border-ink rounded-full flex items-center justify-center shrink-0 shadow-[2px_2px_0_0_#2d2d2d] ${event.source === 'unstop' ? 'bg-yellow text-ink' : event.source === 'devfolio' ? 'bg-blue text-white' : 'bg-red text-white'}`}>
+                          <Icon icon={event.source === 'unstop' ? 'solar:cup-star-linear' : event.source === 'devfolio' ? 'solar:code-linear' : 'solar:users-group-rounded-linear'} className="text-xl" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-heading text-xl tracking-tight truncate group-hover:text-red transition-colors">{event.name}</h3>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink/60 mt-0.5">
+                            <span className="truncate max-w-[120px] sm:max-w-none">{event.organizer}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span className="shrink-0">{formatDate(event.date)}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span className="truncate max-w-[120px] sm:max-w-none">{event.city}</span>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-heading text-xl tracking-tight truncate group-hover:text-red transition-colors">{event.name}</h3>
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink/60 mt-0.5">
-                              <span className="truncate max-w-[120px] sm:max-w-none">{event.organizer}</span>
-                              <span className="hidden sm:inline">•</span>
-                              <span className="shrink-0">{formatDate(event.date)}</span>
-                              <span className="hidden sm:inline">•</span>
-                              <span className="truncate max-w-[120px] sm:max-w-none">{event.city}</span>
-                            </div>
-                          </div>
-                          <div className="hidden sm:flex items-center gap-2 shrink-0">
-                            {event.prizePool && event.prizePool !== 'Free' && (
-                              <span className="bg-yellow border-2 border-ink px-2 py-0.5 text-xs font-heading shadow-[1px_1px_0_0_#2d2d2d] blob-2">{event.prizePool}</span>
-                            )}
-                            <span className={`border-2 border-ink px-2 py-0.5 text-xs font-heading blob-3 ${event.mode === 'Online' ? 'bg-blue/10' : 'bg-tan'}`}>{event.mode}</span>
-                            {(event.owner === userProfile?._id || userProfile?.role === 'admin') && (
-                              <button
-                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditEvent(event); setModalOpen(true); }}
-                                className="bg-white border-2 border-ink p-1 text-ink/40 hover:text-blue hover:shadow-[1px_1px_0_0_#2d2d2d] transition-all blob-1 ml-2"
-                              >
-                                <Icon icon="solar:pen-linear" />
-                              </button>
-                            )}
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
+                        </div>
+                        <div className="hidden sm:flex items-center gap-2 shrink-0">
+                          {event.prizePool && event.prizePool !== 'Free' && event.prizePool !== '0' && event.prizePool !== '₹0' && (
+                            <span className="bg-yellow border-2 border-ink px-2 py-0.5 text-xs font-heading shadow-[1px_1px_0_0_#2d2d2d] blob-2">{event.prizePool}</span>
+                          )}
+                          <span className={`border-2 border-ink px-2 py-0.5 text-xs font-heading blob-3 ${event.mode === 'Online' ? 'bg-blue/10' : 'bg-white'}`}>{event.mode}</span>
+                          {(event.owner === userProfile?._id || userProfile?.role === 'admin') && (
+                            <button
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditEvent(event); setModalOpen(true); }}
+                              className="bg-white border-2 border-ink p-1 text-ink/40 hover:text-blue hover:shadow-[1px_1px_0_0_#2d2d2d] transition-all blob-1 ml-2"
+                            >
+                              <Icon icon="solar:pen-linear" />
+                            </button>
+                          )}
+                        </div>
+                      </Link>
+                    ))}
                   </div>
-                )}
-
-                {unstopEvents.length > 0 && (
-                  <div className="mb-8">
-                    <h3 className="font-heading text-xl tracking-tight text-ink mb-4 flex items-center gap-2">
-                      <Icon icon="solar:global-linear" className="text-yellow" /> Unstop Hackathons
-                    </h3>
-                    <div className="flex flex-col gap-3">
-                      {unstopEvents.map((event) => (
-                        <Link
-                          key={event._id}
-                          to={`/event/${event.slug}`}
-                          className="bg-tan/20 border-[3px] border-ink p-4 shadow-[3px_3px_0_0_#2d2d2d] flex items-center gap-4 hover:shadow-[5px_5px_0_0_#2d2d2d] hover:-translate-y-0.5 transition-all blob-1 group"
-                        >
-                          <div className="w-12 h-12 border-2 border-ink rounded-full flex items-center justify-center shrink-0 shadow-[2px_2px_0_0_#2d2d2d] bg-yellow text-ink">
-                            <Icon icon="solar:cup-star-linear" className="text-xl" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-heading text-xl tracking-tight truncate group-hover:text-red transition-colors">{event.name}</h3>
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink/60 mt-0.5">
-                              <span className="truncate max-w-[120px] sm:max-w-none">{event.organizer}</span>
-                              <span className="hidden sm:inline">•</span>
-                              <span className="shrink-0">{formatDate(event.date)}</span>
-                              <span className="hidden sm:inline">•</span>
-                              <span className="truncate max-w-[120px] sm:max-w-none">{event.city}</span>
-                            </div>
-                          </div>
-                          <div className="hidden sm:flex items-center gap-2 shrink-0">
-                            {event.prizePool && event.prizePool !== 'Free' && event.prizePool !== '0' && event.prizePool !== '₹0' && (
-                              <span className="bg-yellow border-2 border-ink px-2 py-0.5 text-xs font-heading shadow-[1px_1px_0_0_#2d2d2d] blob-2">{event.prizePool}</span>
-                            )}
-                            <span className={`border-2 border-ink px-2 py-0.5 text-xs font-heading blob-3 ${event.mode === 'Online' ? 'bg-blue/10' : 'bg-white'}`}>{event.mode}</span>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                </div>
 
                 {totalPages > 1 && (
                   <div className="mt-8 flex flex-wrap justify-center items-center gap-2">

@@ -23,7 +23,7 @@ exports.getEvents = async (req, res) => {
     const user = await User.findOne({ firebaseUID: req.user.uid }).select('_id');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const { mode, category, city, search, upcoming, page = 1, limit = 20 } = req.query;
+    const { mode, category, city, search, upcoming, source, page = 1, limit = 20 } = req.query;
     
     // Check in-memory cache first
     const cacheKey = `events_${user._id}_${JSON.stringify(req.query)}`;
@@ -46,6 +46,13 @@ exports.getEvents = async (req, res) => {
     }
     if (city) query.city = { $regex: escapeRegex(city), $options: 'i' };
     if (upcoming === 'true') query.date = { $gte: new Date() };
+    if (source) {
+      if (source === 'manual') {
+        query.source = { $in: ['manual', null] };
+      } else {
+        query.source = source;
+      }
+    }
     
     if (search) {
       const safeSearch = escapeRegex(search);

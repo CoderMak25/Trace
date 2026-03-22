@@ -63,6 +63,29 @@ export default function FilterBar({ filters, setFilters }) {
           </div>
         </div>
       </div>
+      
+      {/* Platform Filter */}
+      <div className="flex items-center gap-3 mb-4 overflow-x-auto no-scrollbar pb-2">
+        <span className="text-sm font-heading tracking-tight text-ink/70 whitespace-nowrap mr-2">Platform:</span>
+        {[
+          { label: 'All', value: '' },
+          { label: 'Unstop', value: 'unstop' },
+          { label: 'Devfolio', value: 'devfolio' },
+          { label: 'Trace', value: 'manual' },
+        ].map((plat, i) => (
+          <button
+            key={plat.label}
+            onClick={() => setFilters(prev => ({ ...prev, source: plat.value }))}
+            className={`whitespace-nowrap border-2 px-4 py-1 transition-all ${
+              filters.source === plat.value
+                ? 'bg-ink text-white border-ink shadow-[2px_2px_0_0_#2d2d2d] -translate-y-0.5'
+                : 'bg-white border-dashed border-ink text-ink hover:bg-tan'
+            } ${PILL_SHAPES[i % PILL_SHAPES.length]}`}
+          >
+            {plat.label}
+          </button>
+        ))}
+      </div>
 
       {/* Quick Tags */}
       <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
