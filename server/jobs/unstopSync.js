@@ -118,9 +118,12 @@ async function syncAllUnstopEvents() {
           continue;
         }
 
+        // Use slugify to create a consistent slug from the name if one isn't provided (unstop doesn't give slugs)
+        const eventSlug = slugify(mappedEvent.name);
+
         await Event.findOneAndUpdate(
           { registrationLink: mappedEvent.registrationLink },
-          { $set: mappedEvent },
+          { $set: { ...mappedEvent, slug: eventSlug } },
           { upsert: true, returnDocument: 'after' }
         ).lean();
 

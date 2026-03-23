@@ -117,8 +117,9 @@ export default function MiniCalendar({ events, title = 'Calendar' }) {
       const isDayStart = startD.getDate() === day && startD.getMonth() === month && startD.getFullYear() === year;
       const isDayEnd = endD.getDate() === day && endD.getMonth() === month && endD.getFullYear() === year;
 
+      // Show Start and End markers for ALL events (including synced)
       if (ev.source === 'unstop' || ev.source === 'devfolio') {
-        // For synced events, we only want the date shown as an End point
+        // For synced events, only show End marker
         if (isDayEnd) isEnd = true;
       } else {
         if (isDayStart) isStart = true;

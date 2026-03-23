@@ -7,10 +7,11 @@ const teamEventSchema = new mongoose.Schema(
     addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     status: {
       type: String,
-      enum: ['Saved', 'Interested', 'Applied', 'Submitted'],
+      enum: ['Saved', 'Interested', 'Applied', 'Submitted', 'Registered'],
       default: 'Saved',
     },
     notes: { type: String, default: '' },
+    googleEventId: { type: String },
   },
   { timestamps: true }
 );

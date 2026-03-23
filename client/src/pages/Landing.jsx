@@ -291,6 +291,14 @@ export default function Landing() {
             <span className="font-heading text-3xl tracking-tight">Trace</span>
           </div>
           <div className="flex flex-wrap justify-center gap-6 text-lg font-heading tracking-tight mb-6">
+            <Link to="/privacy" className="relative group hover:text-blue">
+              Privacy Policy
+              <span className="absolute left-0 top-1/2 w-full h-[2px] bg-blue scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
+            </Link>
+            <Link to="/terms" className="relative group hover:text-red">
+              Terms of Service
+              <span className="absolute left-0 top-1/2 w-full h-[2px] bg-red scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
+            </Link>
             {['About', 'Guidelines', 'API', 'Twitter'].map((label, i) => (
               <a key={label} href="#" className={`relative group hover:text-${i % 2 === 0 ? 'blue' : 'red'}`}>
                 {label}

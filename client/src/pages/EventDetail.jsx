@@ -214,8 +214,8 @@ export default function EventDetail() {
           {/* Header */}
           <div className="flex justify-between items-start mb-6 pt-2">
             <div className="flex flex-wrap gap-2">
-              {(Array.isArray(event.category) ? event.category : [event.category]).filter(Boolean).map((cat) => (
-                <span key={cat} className="border-2 border-ink px-3 py-1 text-xs bg-tan font-heading tracking-tight blob-2">
+              {(Array.isArray(event.category) ? event.category : [event.category]).filter(Boolean).map((cat, i) => (
+                <span key={`${cat}-${i}`} className="border-2 border-ink px-3 py-1 text-xs bg-tan font-heading tracking-tight blob-2">
                   {cat}
                 </span>
               ))}

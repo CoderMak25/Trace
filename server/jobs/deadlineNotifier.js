@@ -51,6 +51,8 @@ async function runProgressiveDeadlineNotifications() {
     for (const event of events) {
       const users = await User.find({
         savedEvents: event._id,
+        registeredEvents: { $ne: event._id }, // Skip users who already registered
+        calendarEnabled: { $ne: true }, // Skip FCM if they have Google Calendar enabled
         $or: [
           { fcmToken: { $exists: true, $nin: [null, ''] } },
           { fcmTokens: { $exists: true, $ne: [] } },

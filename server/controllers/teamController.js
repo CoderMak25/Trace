@@ -4,6 +4,7 @@ const Event = require('../models/Event');
 const TeamEvent = require('../models/TeamEvent');
 const admin = require('../config/firebaseAdmin');
 const mongoose = require('mongoose');
+const calendarService = require('../services/calendarService');
 
 // In-memory cache for ultra-fast GET responses
 const apiCache = require('../utils/cache');
@@ -174,7 +175,7 @@ exports.addEventToTeam = async (req, res) => {
     const team = await Team.findById(req.params.id);
     if (!team) return res.status(404).json({ message: 'Team not found' });
 
-    const user = await User.findOne({ firebaseUID: req.user.uid });
+    const user = await User.findOne({ firebaseUID: req.user.uid }).select('+googleRefreshToken');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     if (!team.members.some(id => id.toString() === user._id.toString())) {
@@ -216,7 +217,7 @@ exports.removeEventFromTeam = async (req, res) => {
     const team = await Team.findById(req.params.id);
     if (!team) return res.status(404).json({ message: 'Team not found' });
 
-    const user = await User.findOne({ firebaseUID: req.user.uid });
+    const user = await User.findOne({ firebaseUID: req.user.uid }).select('+googleRefreshToken');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     if (!team.members.some(id => id.toString() === user._id.toString())) {
@@ -230,6 +231,14 @@ exports.removeEventFromTeam = async (req, res) => {
 
     team.events = team.events.filter((id) => id.toString() !== eventId);
     await team.save();
+
+    // Remove from Google Calendar for the current user
+    if (user.googleRefreshToken && user.calendarEnabled) {
+      const mapping = await TeamEvent.findOne({ team: team._id, event: eventId });
+      const gEventId = mapping?.googleEventId || Buffer.from(user._id.toString() + eventId).toString('hex');
+      await calendarService.deleteCalendarEvent(user, gEventId);
+    }
+
     await hardDeleteEventEverywhere(eventId);
 
     apiCache.clear();
@@ -517,7 +526,7 @@ exports.selectEventForTeam = async (req, res) => {
       return res.status(400).json({ message: 'Valid event ID is required' });
     }
 
-    const user = await User.findOne({ firebaseUID: req.user.uid });
+    const user = await User.findOne({ firebaseUID: req.user.uid }).select('+googleRefreshToken');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const team = await Team.findById(req.params.id);
@@ -534,12 +543,22 @@ exports.selectEventForTeam = async (req, res) => {
       return res.json({ message: 'Event already in team schedule', alreadySelected: true });
     }
 
-    await TeamEvent.create({
+    const mapping = await TeamEvent.create({
       team: team._id,
       event: event._id,
       addedBy: user._id,
       status: 'Saved',
     });
+
+    // Sync to Google Calendar
+    console.log(`[TeamSelect] Event: ${event.name}, HasToken: ${!!user.googleRefreshToken}, Enabled: ${user.calendarEnabled}`);
+    if (user.googleRefreshToken && user.calendarEnabled) {
+      const gEventId = await calendarService.createCalendarEvent(user, event, null, team.name);
+      if (gEventId) {
+        mapping.googleEventId = gEventId;
+        await mapping.save();
+      }
+    }
 
     apiCache.clear();
     return res.json({ message: 'Event added to team schedule', alreadySelected: false });
@@ -584,13 +603,20 @@ exports.unselectEventForTeam = async (req, res) => {
       return res.status(400).json({ message: 'Invalid team or event ID' });
     }
 
-    const user = await User.findOne({ firebaseUID: req.user.uid });
+    const user = await User.findOne({ firebaseUID: req.user.uid }).select('+googleRefreshToken');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const team = await Team.findById(req.params.id);
     if (!team) return res.status(404).json({ message: 'Team not found' });
     if (!team.members.some((id) => id.toString() === user._id.toString())) {
       return res.status(403).json({ message: 'You are not a member of this team' });
+    }
+
+    // Remove from Google Calendar
+    if (user.googleRefreshToken && user.calendarEnabled) {
+      const mapping = await TeamEvent.findOne({ team: team._id, event: req.params.eventId });
+      const gEventId = mapping?.googleEventId || Buffer.from(user._id.toString() + req.params.eventId).toString('hex');
+      await calendarService.deleteCalendarEvent(user, gEventId);
     }
 
     await TeamEvent.deleteOne({ team: team._id, event: req.params.eventId });
@@ -603,14 +629,14 @@ exports.unselectEventForTeam = async (req, res) => {
   }
 };
 
-// PUT /api/teams/:id/select-event/:eventId/interest — mark selected event as interested
+// PUT /api/teams/:id/select-event/:eventId/interest — toggle interest on team event
 exports.markTeamEventInterested = async (req, res) => {
   try {
     if (!isValidId(req.params.id) || !isValidId(req.params.eventId)) {
       return res.status(400).json({ message: 'Invalid team or event ID' });
     }
 
-    const user = await User.findOne({ firebaseUID: req.user.uid });
+    const user = await User.findOne({ firebaseUID: req.user.uid }).select('+googleRefreshToken');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const team = await Team.findById(req.params.id);
@@ -619,21 +645,40 @@ exports.markTeamEventInterested = async (req, res) => {
       return res.status(403).json({ message: 'You are not a member of this team' });
     }
 
-    const mapping = await TeamEvent.findOneAndUpdate(
-      { team: team._id, event: req.params.eventId },
-      { $set: { status: 'Interested' } },
-      { returnDocument: 'after' }
-    );
-
+    const mapping = await TeamEvent.findOne({ team: team._id, event: req.params.eventId });
     if (!mapping) {
       return res.status(404).json({ message: 'Add this event to team first' });
     }
 
+    // Toggle: if already Interested → back to Saved (un-interest), otherwise → Interested
+    const newStatus = mapping.status === 'Interested' ? 'Saved' : 'Interested';
+    mapping.status = newStatus;
+    await mapping.save();
+
+    // Sync GCal
+    if (user.googleRefreshToken && user.calendarEnabled) {
+      const event = await Event.findById(req.params.eventId);
+      if (event) {
+        if (newStatus === 'Interested') {
+          // Add to GCal
+          const gEventId = await calendarService.createCalendarEvent(user, event, mapping.googleEventId, team.name);
+          if (gEventId && !mapping.googleEventId) {
+            mapping.googleEventId = gEventId;
+            await mapping.save();
+          }
+        } else {
+          // Removed interest → delete from GCal
+          const gEventId = mapping.googleEventId || Buffer.from(user._id.toString() + req.params.eventId).toString('hex');
+          await calendarService.deleteCalendarEvent(user, gEventId);
+        }
+      }
+    }
+
     apiCache.clear();
-    return res.json({ message: 'Event marked interested for team', status: mapping.status });
+    return res.json({ message: `Event ${newStatus === 'Interested' ? 'marked interested' : 'unmarked'} for team`, status: newStatus });
   } catch (err) {
     console.error('markTeamEventInterested error:', err.message);
-    return res.status(500).json({ message: 'Failed to mark interested for team event' });
+    return res.status(500).json({ message: 'Failed to update interest for team event' });
   }
 };
 

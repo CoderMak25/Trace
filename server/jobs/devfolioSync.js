@@ -99,8 +99,8 @@ async function syncAllDevfolioEvents() {
     for (const rawEvent of uniqueEvents) {
       try {
         const mappedEvent = mapDevfolioToEvent(rawEvent);
-        // Always use the slug from Devfolio for stability
-        mappedEvent.slug = rawEvent.slug;
+        // Always use the slug from Devfolio for stability, with fallback
+        mappedEvent.slug = rawEvent.slug || slugify(mappedEvent.name);
 
         await Event.findOneAndUpdate(
           { slug: mappedEvent.slug, source: 'devfolio' },

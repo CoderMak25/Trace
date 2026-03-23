@@ -38,14 +38,8 @@ export default function Login() {
   async function handleGoogle() {
     setError('');
     try {
-      await googleSignIn();
-
-      // Auto-prompt Notifications on login exact moment!
-      if ('Notification' in window && Notification.permission === 'default') {
-        try { await Notification.requestPermission(); } catch (e) {}
-      }
-
-      window.location.href = '/dashboard'; // Force full mount to guarantee syncUser catches the granted state
+      googleSignIn();
+      // Redirect and notification prompt are now handled in AuthContext onSuccess
     } catch (err) {
       setError(err.message?.replace('Firebase: ', '') || 'Google sign-in failed');
     }

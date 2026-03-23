@@ -10,6 +10,8 @@ import Profile from './pages/Profile';
 import Teams from './pages/Teams';
 import TeamDetail from './pages/TeamDetail';
 import NotificationBanner from './components/NotificationBanner';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
 
 function ProtectedRoute({ children }) {
   const { currentUser, loading } = useAuth();
@@ -47,6 +49,8 @@ function AppRoutes() {
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/teams" element={<ProtectedRoute><Teams /></ProtectedRoute>} />
       <Route path="/teams/:id" element={<ProtectedRoute><TeamDetail /></ProtectedRoute>} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
     </>

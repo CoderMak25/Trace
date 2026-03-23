@@ -76,7 +76,8 @@ export default function Home() {
     fetchTeamEvents();
   }, [currentUser]);
 
-  // Merge personal + team events (deduplicated) for the calendar
+  // Merge personal saved + team events (deduplicated) for the calendar
+  // Only events the user has interacted with (saved or team) — NOT the entire feed
   const allCalendarEvents = useMemo(() => {
     const map = new Map();
     
@@ -86,13 +87,7 @@ export default function Home() {
       });
     }
 
-    events.forEach((e) => {
-      if (e.source !== 'unstop' && e.source !== 'devfolio') {
-        map.set(e._id, e);
-      }
-    });
-    
-    // Team-linked copy should enrich/override existing entry so calendar can show team context.
+    // Team-linked events enrich/override existing entries so calendar shows team context.
     teamEvents.forEach((e) => {
       if (!e?._id) return;
       const existing = map.get(e._id);
@@ -103,7 +98,7 @@ export default function Home() {
       }
     });
     return Array.from(map.values());
-  }, [events, teamEvents, userProfile?.savedEvents]);
+  }, [teamEvents, userProfile?.savedEvents]);
 
   const handleEventSaved = (savedEvent, isEdit) => {
     if (isEdit) updateEventLocally(savedEvent);

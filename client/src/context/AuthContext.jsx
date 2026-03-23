@@ -1,13 +1,17 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   onAuthStateChanged,
   signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
+  GoogleAuthProvider,
+  signInWithCredential,
 } from 'firebase/auth';
 import { auth, googleProvider, getMessagingToken } from '../firebase/firebaseConfig';
 import { requestNotificationPermission, onForegroundMessage } from '../firebase/messaging';
+import { useGoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 
 const AuthContext = createContext();
@@ -21,9 +25,10 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState(null);
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+  const navigate = useNavigate();
 
   // Sync user with backend
-  async function syncUser(user) {
+  async function syncUser(user, googleAuthCode = null) {
     try {
       let fcmToken = null;
       if ('Notification' in window) {
@@ -32,7 +37,7 @@ export function AuthProvider({ children }) {
             const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
             if (vapidKey) {
               const reg = await navigator.serviceWorker.getRegistration();
-              if (reg) await reg.update(); // Force browser to bypass cache & check for SW updates
+              if (reg) await reg.update(); 
               fcmToken = await getMessagingToken(vapidKey);
             }
           } catch (e) {
@@ -52,28 +57,53 @@ export function AuthProvider({ children }) {
           displayName: user.displayName,
           photoURL: user.photoURL,
           fcmToken: fcmToken,
+          googleAuthCode: googleAuthCode, // Send the code to the backend
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setUserProfile(res.data);
     } catch (err) {
       console.error('User sync failed:', err);
-      // Still allow usage, just no backend sync
-      setUserProfile({
-        firebaseUID: user.uid,
-        email: user.email,
-        displayName: user.displayName || user.email,
-        role: 'user',
-        savedEvents: [],
-      });
     }
   }
 
+  const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+  // Track user activity
+  useEffect(() => {
+    function touchActivity() {
+      localStorage.setItem('trace_last_active', Date.now().toString());
+    }
+    // Record activity on visibility, clicks, and key presses
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') touchActivity();
+    });
+    window.addEventListener('focus', touchActivity);
+    // Initial touch
+    touchActivity();
+  }, []);
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      if (user) await syncUser(user);
-      else setUserProfile(null);
+      if (user) {
+        // Check if session has expired (7 days of inactivity)
+        const lastActive = parseInt(localStorage.getItem('trace_last_active') || '0', 10);
+        if (lastActive > 0 && Date.now() - lastActive > SESSION_MAX_AGE_MS) {
+          console.log('[Session] Expired after 7 days of inactivity. Logging out.');
+          localStorage.removeItem('trace_last_active');
+          await signOut(auth);
+          setCurrentUser(null);
+          setUserProfile(null);
+          setLoading(false);
+          return;
+        }
+        setCurrentUser(user);
+        await syncUser(user);
+        localStorage.setItem('trace_last_active', Date.now().toString());
+      } else {
+        setCurrentUser(null);
+        setUserProfile(null);
+      }
       setLoading(false);
     });
     return unsub;
@@ -102,8 +132,44 @@ export function AuthProvider({ children }) {
   }, [currentUser]);
 
   // Auth methods
-  function googleSignIn() {
-    return signInWithPopup(auth, googleProvider);
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (codeResponse) => {
+      setLoading(true);
+      try {
+        const { code } = codeResponse;
+        
+        // 1. Send code to backend to exchange for tokens
+        // We do this BEFORE firebase login because we want the backend to have the refresh token
+        const exchangeRes = await axios.post('/api/users/google-auth', { code });
+        const { firebaseToken, user: profile } = exchangeRes.data;
+
+        // 2. Sign in to Firebase with the custom token or just identity token
+        if (firebaseToken) {
+          await signInWithIdToken(auth, firebaseToken);
+        }
+        
+        // 3. User is now logged in, onAuthStateChanged will trigger syncUser
+        // But since we already have the profile from the exchange, we can set it
+        setUserProfile(profile);
+        navigate('/dashboard');
+      } catch (err) {
+        console.error('Google Sign In failed:', err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    flow: 'auth-code',
+    scope: 'https://www.googleapis.com/auth/calendar.events email profile openid',
+    prompt: 'consent',
+  });
+
+  const googleSignIn = () => {
+    googleLogin();
+  };
+
+  async function signInWithIdToken(auth, idToken) {
+    const credential = GoogleAuthProvider.credential(idToken);
+    return signInWithCredential(auth, credential);
   }
 
   function login(email, password) {
