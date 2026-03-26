@@ -12,7 +12,7 @@ function isValidId(id) {
 // POST /api/users/sync — create or update user on login
 exports.syncUser = async (req, res) => {
   try {
-    const { firebaseUID, email, displayName, photoURL, fcmToken, googleAuthCode } = req.body;
+    const { firebaseUID, email, displayName, photoURL, fcmToken, googleRefreshToken } = req.body;
 
     if (!firebaseUID || !email) {
       return res.status(400).json({ message: 'firebaseUID and email are required' });
@@ -20,11 +20,10 @@ exports.syncUser = async (req, res) => {
 
     let user = await User.findOne({ firebaseUID }).select('+googleRefreshToken');
     
-    // FALLBACK: If not found by UID, check by email (handles Google sub vs Firebase UID mismatch)
+    // FALLBACK: If not found by UID, check by email (handles edge cases)
     if (!user) {
       user = await User.findOne({ email }).select('+googleRefreshToken');
       if (user) {
-        // Merge: update the firebaseUID to the real Firebase UID so future lookups work
         console.log(`[SyncUser] Merging user ${email}: old UID ${user.firebaseUID} → new UID ${firebaseUID}`);
         user.firebaseUID = firebaseUID;
       }
@@ -35,39 +34,41 @@ exports.syncUser = async (req, res) => {
       user.displayName = displayName || user.displayName;
       user.photoURL = photoURL || user.photoURL;
       if (fcmToken && typeof fcmToken === 'string' && fcmToken.length > 20) {
-        // Remove this token if it already exists, then add to front
         user.fcmTokens = user.fcmTokens.filter(t => t !== fcmToken);
         user.fcmTokens.unshift(fcmToken);
-        // Keep only the latest 3 tokens (multi-device support)
         if (user.fcmTokens.length > 3) {
           user.fcmTokens = user.fcmTokens.slice(0, 3);
         }
       }
 
-      // Handle Google Calendar Token Exchange
-      if (googleAuthCode) {
-        const oauth2Client = new google.auth.OAuth2(
-          process.env.GOOGLE_CLIENT_ID,
-          process.env.GOOGLE_CLIENT_SECRET,
-          'postmessage'
-        );
-        const { tokens } = await oauth2Client.getToken(googleAuthCode);
-        if (tokens.refresh_token) {
-          user.googleRefreshToken = tokens.refresh_token;
-          user.calendarEnabled = true;
-        }
+      // Store Google Refresh Token if provided (from the frontend after google-auth exchange)
+      if (googleRefreshToken) {
+        user.googleRefreshToken = googleRefreshToken;
+        user.calendarEnabled = true;
+        console.log(`[SyncUser] Stored Google refresh token for ${email} (UID: ${firebaseUID})`);
       }
+
       await user.save();
+
+      // Background sync if we just received a new refresh token
+      if (googleRefreshToken) {
+        calendarService.syncAllExistingEvents(user).catch(err =>
+          console.error(`[SyncUser] Background GCal sync error:`, err.message)
+        );
+      }
     } else {
       user = await User.create({
         firebaseUID, email,
         displayName: displayName || email,
         photoURL: photoURL || '',
         fcmTokens: (fcmToken && typeof fcmToken === 'string' && fcmToken.length > 20) ? [fcmToken] : [],
+        googleRefreshToken: googleRefreshToken || undefined,
+        calendarEnabled: !!googleRefreshToken,
       });
+      console.log(`[SyncUser] Created NEW user: ${email}, HasToken: ${!!googleRefreshToken}`);
     }
 
-    // Populate savedEvents before returning to ensure frontend has complete objects
+    // Populate savedEvents before returning
     const populatedUser = await User.findById(user._id)
       .populate({ path: 'savedEvents', populate: { path: 'team', select: 'name' } })
       .populate('registeredEvents');
@@ -210,14 +211,15 @@ exports.saveFcmToken = async (req, res) => {
   }
 };
 
-// POST /api/users/google-auth — exchange code for tokens and sync
+// POST /api/users/google-auth — exchange code for tokens ONLY
+// Does NOT create or modify users — that's syncUser's job
 exports.googleAuth = async (req, res) => {
   try {
-    const { code, firebaseUID } = req.body;
+    const { code } = req.body;
     if (!code) return res.status(400).json({ message: 'Code is required' });
 
     if (!process.env.GOOGLE_CLIENT_SECRET) {
-      console.error('[GoogleAuth] CRITICAL ERROR: GOOGLE_CLIENT_SECRET is missing from environment.');
+      console.error('[GoogleAuth] CRITICAL: GOOGLE_CLIENT_SECRET missing');
       return res.status(500).json({ message: 'Server configuration error' });
     }
 
@@ -229,60 +231,11 @@ exports.googleAuth = async (req, res) => {
 
     const { tokens } = await oauth2Client.getToken(code);
     console.log(`[GoogleAuth] Tokens received: ID:${!!tokens.id_token}, Refresh:${!!tokens.refresh_token}`);
-    
-    const { id_token, refresh_token } = tokens;
 
-    // Verify ID Token to get user details
-    const ticket = await oauth2Client.verifyIdToken({
-      idToken: id_token,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-    const payload = ticket.getPayload();
-    const { sub: googleId, email, name: displayName, picture: photoURL } = payload;
-
-    // Find user by Firebase UID (best) or Email (fallback)
-    let user = null;
-    if (firebaseUID) {
-      user = await User.findOne({ firebaseUID }).select('+googleRefreshToken');
-    }
-    if (!user) {
-      user = await User.findOne({ email }).select('+googleRefreshToken');
-    }
-
-    if (user) {
-      if (refresh_token) {
-        user.googleRefreshToken = refresh_token;
-        user.calendarEnabled = true;
-        console.log(`[GoogleAuth] SUCCESS: Linked token to user ${user.email} (UID: ${user.firebaseUID})`);
-      } else {
-        console.log(`[GoogleAuth] WARNING: No refresh_token for ${email}. User may have already authorized Trace.`);
-      }
-      user.displayName = displayName || user.displayName;
-      user.photoURL = photoURL || user.photoURL;
-      if (firebaseUID && !user.firebaseUID) user.firebaseUID = firebaseUID;
-      await user.save();
-
-      // Background sync all existing events
-      if (refresh_token) {
-        calendarService.syncAllExistingEvents(user).catch(err => 
-          console.error(`[GoogleAuth] Background sync error:`, err.message)
-        );
-      }
-    } else {
-      user = await User.create({
-        firebaseUID: firebaseUID || googleId,
-        email,
-        displayName: displayName || email,
-        photoURL: photoURL || '',
-        googleRefreshToken: refresh_token,
-        calendarEnabled: !!refresh_token,
-      });
-      console.log(`[GoogleAuth] Created NEW user: ${email}. HasToken: ${!!refresh_token}`);
-    }
-
+    // Just return the tokens to the frontend — syncUser will handle storing them
     res.json({
-      firebaseToken: id_token,
-      user: user
+      firebaseToken: tokens.id_token,
+      refreshToken: tokens.refresh_token || null,
     });
   } catch (err) {
     console.error('googleAuth error:', err.message);

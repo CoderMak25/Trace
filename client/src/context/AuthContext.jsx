@@ -27,8 +27,11 @@ export function AuthProvider({ children }) {
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
   const navigate = useNavigate();
 
+  // Store refresh token temporarily between google-auth exchange and syncUser
+  let pendingRefreshToken = null;
+
   // Sync user with backend
-  async function syncUser(user, googleAuthCode = null) {
+  async function syncUser(user) {
     try {
       let fcmToken = null;
       if ('Notification' in window) {
@@ -49,16 +52,24 @@ export function AuthProvider({ children }) {
       }
 
       const token = await user.getIdToken();
+      const payload = {
+        firebaseUID: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        fcmToken: fcmToken,
+      };
+
+      // Pass the pending refresh token if we just did a Google login
+      if (pendingRefreshToken) {
+        payload.googleRefreshToken = pendingRefreshToken;
+        console.log('[Sync] Passing Google refresh token to syncUser');
+        pendingRefreshToken = null; // Clear it after use
+      }
+
       const res = await axios.post(
         '/api/users/sync',
-        {
-          firebaseUID: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
-          fcmToken: fcmToken,
-          googleAuthCode: googleAuthCode, // Send the code to the backend
-        },
+        payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setUserProfile(res.data);
@@ -74,19 +85,16 @@ export function AuthProvider({ children }) {
     function touchActivity() {
       localStorage.setItem('trace_last_active', Date.now().toString());
     }
-    // Record activity on visibility, clicks, and key presses
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') touchActivity();
     });
     window.addEventListener('focus', touchActivity);
-    // Initial touch
     touchActivity();
   }, []);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Check if session has expired (7 days of inactivity)
         const lastActive = parseInt(localStorage.getItem('trace_last_active') || '0', 10);
         if (lastActive > 0 && Date.now() - lastActive > SESSION_MAX_AGE_MS) {
           console.log('[Session] Expired after 7 days of inactivity. Logging out.');
@@ -109,7 +117,7 @@ export function AuthProvider({ children }) {
     return unsub;
   }, []);
 
-  // Single foreground push listener — shows exactly ONE browser notification
+  // Single foreground push listener
   useEffect(() => {
     if (!currentUser) return;
 
@@ -117,8 +125,6 @@ export function AuthProvider({ children }) {
     onForegroundMessage((payload) => {
       const title = payload.data?.title || payload.notification?.title || 'Trace';
       const body = payload.data?.body || payload.notification?.body || '';
-
-      // Always show via service worker for reliability (works on all browsers)
       navigator.serviceWorker.ready.then((reg) => {
         reg.showNotification(title, { body, icon: '/vite.svg', tag: 'trace-fg-notif' });
       });
@@ -138,23 +144,23 @@ export function AuthProvider({ children }) {
       try {
         const { code } = codeResponse;
         
-        // 1. Send code to backend to exchange for tokens
-        // We pass the currentUid if available to help link accounts
-        const currentUid = auth.currentUser?.uid;
-        const exchangeRes = await axios.post('/api/users/google-auth', { 
-          code, 
-          firebaseUID: currentUid 
-        });
-        const { firebaseToken, user: profile } = exchangeRes.data;
+        // Step 1: Exchange auth code for tokens (backend does NOT touch User collection)
+        const exchangeRes = await axios.post('/api/users/google-auth', { code });
+        const { firebaseToken, refreshToken } = exchangeRes.data;
 
-        // 2. Sign in to Firebase with the custom token or just identity token
+        // Step 2: Store the refresh token so syncUser can grab it
+        if (refreshToken) {
+          pendingRefreshToken = refreshToken;
+          console.log('[GoogleLogin] Got refresh token, will pass to syncUser');
+        }
+
+        // Step 3: Sign into Firebase — this triggers onAuthStateChanged → syncUser
+        // syncUser will store the refresh token on the CORRECT user (by Firebase UID)
         if (firebaseToken) {
           await signInWithIdToken(auth, firebaseToken);
         }
         
-        // 3. User is now logged in, onAuthStateChanged will trigger syncUser
-        // But since we already have the profile from the exchange, we can set it
-        setUserProfile(profile);
+        // Step 4: Navigate (syncUser was already called by onAuthStateChanged)
         navigate('/dashboard');
       } catch (err) {
         console.error('Google Sign In failed:', err);
