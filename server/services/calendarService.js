@@ -47,9 +47,12 @@ async function createCalendarEvent(user, event, existingGoogleEventId = null, co
       return null;
     }
 
-    // Match Dashboard behavior: priority is registrationDeadline, then endDate, then date
-    const targetDate = event.registrationDeadline || event.endDate || event.date;
-    const isRegDeadline = !!event.registrationDeadline;
+    // Ensure targetDate is a valid Date object
+    const finalDate = (targetDate instanceof Date) ? targetDate : new Date(targetDate);
+    if (isNaN(finalDate.getTime())) {
+      console.error(`[Calendar] Invalid target date for ${event.name}: ${targetDate}`);
+      return null;
+    }
 
     const calendarEvent = {
       summary: `⏰ [${context}] ${isRegDeadline ? 'Reg. Deadline' : 'Event Ends'}: ${event.name}`,
@@ -57,11 +60,11 @@ async function createCalendarEvent(user, event, existingGoogleEventId = null, co
       description: `${isRegDeadline ? 'Registration deadline' : 'Event concludes'} for ${event.name}.\nSource: ${context}\nLink: ${event.registrationLink}`,
       status: 'confirmed',
       start: {
-        dateTime: targetDate.toISOString(),
+        dateTime: finalDate.toISOString(),
         timeZone: 'UTC',
       },
       end: {
-        dateTime: new Date(targetDate.getTime() + 60 * 60 * 1000).toISOString(),
+        dateTime: new Date(finalDate.getTime() + 60 * 60 * 1000).toISOString(),
         timeZone: 'UTC',
       },
       reminders: {
@@ -73,6 +76,8 @@ async function createCalendarEvent(user, event, existingGoogleEventId = null, co
         ],
       },
     };
+
+    console.log(`[Calendar] Sending to Google: ${calendarEvent.summary} at ${finalDate.toISOString()}`);
 
     const response = await calendar.events.patch({
       calendarId: 'primary',
@@ -86,13 +91,15 @@ async function createCalendarEvent(user, event, existingGoogleEventId = null, co
           resource: { ...calendarEvent, id: eventIdToUse },
         });
       }
+      console.error(`[Calendar] Google API internal error: ${err.code} - ${err.message}`, err.response?.data);
       throw err;
     });
 
-    console.log(`[Calendar] Event synced: ${response.data.id}`);
+    console.log(`[Calendar] SUCCESS: Event synced: ${response.data.id}`);
     return response.data.id;
   } catch (err) {
-    console.error(`[Calendar] Failed to create event:`, err.message);
+    console.error(`[Calendar] CRITICAL ERROR for ${event.name}:`, err.message);
+    if (err.response) console.error(`[Calendar] Response data:`, JSON.stringify(err.response.data));
     return null;
   }
 }

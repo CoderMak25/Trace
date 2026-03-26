@@ -161,6 +161,7 @@ export function AuthProvider({ children }) {
     flow: 'auth-code',
     scope: 'https://www.googleapis.com/auth/calendar.events email profile openid',
     prompt: 'consent',
+    access_type: 'offline',
   });
 
   const googleSignIn = () => {

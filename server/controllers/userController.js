@@ -38,7 +38,7 @@ exports.syncUser = async (req, res) => {
         const oauth2Client = new google.auth.OAuth2(
           process.env.GOOGLE_CLIENT_ID,
           process.env.GOOGLE_CLIENT_SECRET,
-          process.env.GOOGLE_REDIRECT_URI
+          'postmessage'
         );
         const { tokens } = await oauth2Client.getToken(googleAuthCode);
         if (tokens.refresh_token) {
@@ -222,15 +222,15 @@ exports.googleAuth = async (req, res) => {
     const payload = ticket.getPayload();
     const { sub: googleId, email, name: displayName, picture: photoURL } = payload;
 
-    // Find user by email (as identity across systems)
-    let user = await User.findOne({ email });
+    // Find user by email (as identity across systems)  
+    let user = await User.findOne({ email }).select('+googleRefreshToken');
     if (user) {
       if (refresh_token) {
         user.googleRefreshToken = refresh_token;
         user.calendarEnabled = true;
-        console.log(`[GoogleAuth] Saved refresh token`);
+        console.log(`[GoogleAuth] SUCCESS: Saved refresh token for ${email}`);
       } else {
-        console.log(`[GoogleAuth] No refresh_token in exchange. User may need to re-consent.`);
+        console.log(`[GoogleAuth] WARNING: No refresh_token for ${email}. User may have already authorized Trace. Revoke access at myaccount.google.com/connections to reset.`);
       }
       user.displayName = displayName || user.displayName;
       user.photoURL = photoURL || user.photoURL;
@@ -249,6 +249,14 @@ exports.googleAuth = async (req, res) => {
         googleRefreshToken: refresh_token,
         calendarEnabled: !!refresh_token,
       });
+      console.log(`[GoogleAuth] Created NEW user: ${email}. HasToken: ${!!refresh_token}`);
+      
+      // NEW: Also sync for new users!
+      if (refresh_token) {
+        calendarService.syncAllExistingEvents(user).catch(err => 
+          console.error(`[GoogleAuth] New user sync background error:`, err.message)
+        );
+      }
     }
 
     res.json({
