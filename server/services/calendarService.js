@@ -54,6 +54,10 @@ async function createCalendarEvent(user, event, existingGoogleEventId = null, co
       return null;
     }
 
+    // Match Dashboard behavior: priority is registrationDeadline, then endDate, then date
+    const targetDate = event.registrationDeadline || event.endDate || event.date;
+    const isRegDeadline = !!event.registrationDeadline;
+
     // Ensure targetDate is a valid Date object
     const finalDate = (targetDate instanceof Date) ? targetDate : new Date(targetDate);
     if (isNaN(finalDate.getTime())) {

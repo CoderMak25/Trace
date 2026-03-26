@@ -18,7 +18,18 @@ exports.syncUser = async (req, res) => {
       return res.status(400).json({ message: 'firebaseUID and email are required' });
     }
 
-    let user = await User.findOne({ firebaseUID });
+    let user = await User.findOne({ firebaseUID }).select('+googleRefreshToken');
+    
+    // FALLBACK: If not found by UID, check by email (handles Google sub vs Firebase UID mismatch)
+    if (!user) {
+      user = await User.findOne({ email }).select('+googleRefreshToken');
+      if (user) {
+        // Merge: update the firebaseUID to the real Firebase UID so future lookups work
+        console.log(`[SyncUser] Merging user ${email}: old UID ${user.firebaseUID} → new UID ${firebaseUID}`);
+        user.firebaseUID = firebaseUID;
+      }
+    }
+
     if (user) {
       user.email = email;
       user.displayName = displayName || user.displayName;
