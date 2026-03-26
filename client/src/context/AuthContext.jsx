@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   onAuthStateChanged,
@@ -28,7 +28,8 @@ export function AuthProvider({ children }) {
   const navigate = useNavigate();
 
   // Store refresh token temporarily between google-auth exchange and syncUser
-  let pendingRefreshToken = null;
+  // MUST be useRef — plain variables get wiped on React re-render
+  const pendingRefreshToken = useRef(null);
 
   // Sync user with backend
   async function syncUser(user) {
@@ -61,10 +62,10 @@ export function AuthProvider({ children }) {
       };
 
       // Pass the pending refresh token if we just did a Google login
-      if (pendingRefreshToken) {
-        payload.googleRefreshToken = pendingRefreshToken;
+      if (pendingRefreshToken.current) {
+        payload.googleRefreshToken = pendingRefreshToken.current;
         console.log('[Sync] Passing Google refresh token to syncUser');
-        pendingRefreshToken = null; // Clear it after use
+        pendingRefreshToken.current = null; // Clear it after use
       }
 
       const res = await axios.post(
@@ -150,7 +151,7 @@ export function AuthProvider({ children }) {
 
         // Step 2: Store the refresh token so syncUser can grab it
         if (refreshToken) {
-          pendingRefreshToken = refreshToken;
+          pendingRefreshToken.current = refreshToken;
           console.log('[GoogleLogin] Got refresh token, will pass to syncUser');
         }
 
