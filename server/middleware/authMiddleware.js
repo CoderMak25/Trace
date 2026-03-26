@@ -14,22 +14,16 @@ const authMiddleware = async (req, res, next) => {
     }
 
     const decoded = await admin.auth().verifyIdToken(token);
-    // Get user from MongoDB, create if missing
-    let user = await User.findOne({ firebaseUID: decoded.uid });
-    if (!user) {
-      user = await User.create({
-        firebaseUID: decoded.uid,
-        email: decoded.email || 'no-email@trace.app',
-        displayName: decoded.name || decoded.email || 'Trace User',
-        photoURL: decoded.picture || '',
-      });
-    }
+    
+    // Get user from MongoDB but DO NOT create if missing.
+    // Creation and merging is exclusively syncUser's responsibility.
+    const user = await User.findOne({ firebaseUID: decoded.uid });
 
     req.user = {
       uid: decoded.uid,
       email: decoded.email,
-      role: user.role || 'user',
-      mongoId: user._id,
+      role: user ? user.role : 'user',
+      mongoId: user ? user._id : null,
     };
     next();
   } catch (err) {
