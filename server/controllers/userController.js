@@ -210,6 +210,12 @@ exports.googleAuth = async (req, res) => {
       return res.status(500).json({ message: 'Server configuration error' });
     }
 
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      'postmessage'
+    );
+
     const { tokens } = await oauth2Client.getToken(code);
     console.log(`[GoogleAuth] Tokens received: ID:${!!tokens.id_token}, Refresh:${!!tokens.refresh_token}`);
     
