@@ -6,19 +6,26 @@ function maskEmail(email) {
   return `${local[0]}***@${domain}`;
 }
 
-const oauth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  'postmessage'
-);
-
 /**
  * Get an authenticated calendar instance for a user
  */
 async function getCalendarClient(refreshToken) {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    console.error('[Calendar] ERROR: GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET is missing from environment.');
+    throw new Error('Server configuration error: Google credentials missing');
+  }
+
+  // Use a fresh client for every request to avoid race conditions with setCredentials
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    'postmessage'
+  );
+
   oauth2Client.setCredentials({
     refresh_token: refreshToken
   });
+  
   return google.calendar({ version: 'v3', auth: oauth2Client });
 }
 

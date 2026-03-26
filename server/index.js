@@ -7,6 +7,7 @@ const connectDB = require('./config/db');
 const startDeadlineNotifier = require('./jobs/deadlineNotifier');
 
 const app = express();
+app.set('trust proxy', 1); // Required for express-rate-limit on Render/Vercel
 const rateLimit = require('express-rate-limit');
 
 const globalLimiter = rateLimit({

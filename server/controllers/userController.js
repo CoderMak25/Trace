@@ -202,16 +202,17 @@ exports.saveFcmToken = async (req, res) => {
 // POST /api/users/google-auth — exchange code for tokens and sync
 exports.googleAuth = async (req, res) => {
   try {
-    const { code } = req.body;
+    const { code, firebaseUID } = req.body;
     if (!code) return res.status(400).json({ message: 'Code is required' });
 
-    const oauth2Client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      'postmessage'
-    );
+    if (!process.env.GOOGLE_CLIENT_SECRET) {
+      console.error('[GoogleAuth] CRITICAL ERROR: GOOGLE_CLIENT_SECRET is missing from environment.');
+      return res.status(500).json({ message: 'Server configuration error' });
+    }
 
     const { tokens } = await oauth2Client.getToken(code);
+    console.log(`[GoogleAuth] Tokens received: ID:${!!tokens.id_token}, Refresh:${!!tokens.refresh_token}`);
+    
     const { id_token, refresh_token } = tokens;
 
     // Verify ID Token to get user details
@@ -222,27 +223,37 @@ exports.googleAuth = async (req, res) => {
     const payload = ticket.getPayload();
     const { sub: googleId, email, name: displayName, picture: photoURL } = payload;
 
-    // Find user by email (as identity across systems)  
-    let user = await User.findOne({ email }).select('+googleRefreshToken');
+    // Find user by Firebase UID (best) or Email (fallback)
+    let user = null;
+    if (firebaseUID) {
+      user = await User.findOne({ firebaseUID }).select('+googleRefreshToken');
+    }
+    if (!user) {
+      user = await User.findOne({ email }).select('+googleRefreshToken');
+    }
+
     if (user) {
       if (refresh_token) {
         user.googleRefreshToken = refresh_token;
         user.calendarEnabled = true;
-        console.log(`[GoogleAuth] SUCCESS: Saved refresh token for ${email}`);
+        console.log(`[GoogleAuth] SUCCESS: Linked token to user ${user.email} (UID: ${user.firebaseUID})`);
       } else {
-        console.log(`[GoogleAuth] WARNING: No refresh_token for ${email}. User may have already authorized Trace. Revoke access at myaccount.google.com/connections to reset.`);
+        console.log(`[GoogleAuth] WARNING: No refresh_token for ${email}. User may have already authorized Trace.`);
       }
       user.displayName = displayName || user.displayName;
       user.photoURL = photoURL || user.photoURL;
+      if (firebaseUID && !user.firebaseUID) user.firebaseUID = firebaseUID;
       await user.save();
 
       // Background sync all existing events
-      calendarService.syncAllExistingEvents(user).catch(err => 
-        console.error(`[GoogleAuth] Initial sync background error:`, err.message)
-      );
+      if (refresh_token) {
+        calendarService.syncAllExistingEvents(user).catch(err => 
+          console.error(`[GoogleAuth] Background sync error:`, err.message)
+        );
+      }
     } else {
       user = await User.create({
-        firebaseUID: googleId, // Fallback if no existing user
+        firebaseUID: firebaseUID || googleId,
         email,
         displayName: displayName || email,
         photoURL: photoURL || '',
@@ -250,13 +261,6 @@ exports.googleAuth = async (req, res) => {
         calendarEnabled: !!refresh_token,
       });
       console.log(`[GoogleAuth] Created NEW user: ${email}. HasToken: ${!!refresh_token}`);
-      
-      // NEW: Also sync for new users!
-      if (refresh_token) {
-        calendarService.syncAllExistingEvents(user).catch(err => 
-          console.error(`[GoogleAuth] New user sync background error:`, err.message)
-        );
-      }
     }
 
     res.json({

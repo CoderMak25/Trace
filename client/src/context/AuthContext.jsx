@@ -139,8 +139,12 @@ export function AuthProvider({ children }) {
         const { code } = codeResponse;
         
         // 1. Send code to backend to exchange for tokens
-        // We do this BEFORE firebase login because we want the backend to have the refresh token
-        const exchangeRes = await axios.post('/api/users/google-auth', { code });
+        // We pass the currentUid if available to help link accounts
+        const currentUid = auth.currentUser?.uid;
+        const exchangeRes = await axios.post('/api/users/google-auth', { 
+          code, 
+          firebaseUID: currentUid 
+        });
         const { firebaseToken, user: profile } = exchangeRes.data;
 
         // 2. Sign in to Firebase with the custom token or just identity token
