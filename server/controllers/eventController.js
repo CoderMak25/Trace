@@ -53,7 +53,7 @@ exports.getEvents = async (req, res) => {
         query.source = source;
       }
     }
-    
+    //Search Logic
     if (search) {
       const safeSearch = escapeRegex(search);
       query.$and = query.$and || [];
@@ -71,7 +71,7 @@ exports.getEvents = async (req, res) => {
         ]
       });
     }
-    
+    //Pagination Logic
     const pageNumber = parseInt(page);
     const pageSize = parseInt(limit);
     const skip = (pageNumber - 1) * pageSize;
