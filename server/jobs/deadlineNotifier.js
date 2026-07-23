@@ -4,9 +4,11 @@ const User = require('../models/User');
 const { syncAllUnstopEvents, updateEventStatuses } = require('./unstopSync');
 const { syncAllDevfolioEvents, updateDevfolioStatuses } = require('./devfolioSync');
 const { sendPush } = require('../utils/sendPush');
+const { purgeExpiredEvents } = require('./expiredEventCleanup');
 let isFullSyncRunning = false;
 let isStatusSyncRunning = false;
 let isNotifierRunning = false;
+let isCleanupRunning = false;
 
 const ALERTS = [
   {
@@ -117,7 +119,20 @@ function startDeadlineNotifier() {
     }
   });
 
-  console.log('[CRON] Unstop sync and progressive deadline jobs started');
+  // Purge expired events daily at midnight
+  cron.schedule('0 0 * * *', async () => {
+    if (isCleanupRunning) return;
+    isCleanupRunning = true;
+    try {
+      await purgeExpiredEvents();
+    } catch (err) {
+      console.error('[CRON] Expired event cleanup failed:', err.message);
+    } finally {
+      isCleanupRunning = false;
+    }
+  });
+
+  console.log('[CRON] Unstop sync, progressive deadline, and expired event cleanup jobs started');
 }
 
 module.exports = startDeadlineNotifier;
