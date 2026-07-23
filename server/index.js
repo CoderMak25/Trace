@@ -5,6 +5,7 @@ const { syncAllUnstopEvents } = require('./jobs/unstopSync');
 const { syncAllDevfolioEvents } = require('./jobs/devfolioSync');
 const connectDB = require('./config/db');
 const startDeadlineNotifier = require('./jobs/deadlineNotifier');
+const { purgeExpiredEvents } = require('./jobs/expiredEventCleanup');
 
 const app = express();
 app.set('trust proxy', 1); // Required for express-rate-limit on Render/Vercel
@@ -52,12 +53,19 @@ async function start() {
   await connectDB();
   console.log('Connected to MongoDB'); // Added for clarity after connectDB()
   
-  // Auto-sync Unstop events on startup
+  // Auto-sync events on startup
   try {
     await syncAllUnstopEvents();
     await syncAllDevfolioEvents();
   } catch (err) {
     console.error('Failed to sync events on startup:', err);
+  }
+
+  // Purge expired events on startup so old events disappear immediately
+  try {
+    await purgeExpiredEvents();
+  } catch (err) {
+    console.error('Failed to purge expired events on startup:', err);
   }
 
   app.listen(PORT, () => {
