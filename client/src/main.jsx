@@ -4,6 +4,10 @@ import axios from 'axios'
 import './index.css'
 import App from './App.jsx'
 import { GoogleOAuthProvider } from '@react-oauth/google'
+import { registerSW } from 'virtual:pwa-register'
+
+// Register the PWA service worker (handles Workbox + Firebase)
+registerSW({ immediate: true })
 
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 

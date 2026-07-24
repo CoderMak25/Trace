@@ -1,6 +1,10 @@
+import { precacheAndRoute } from 'workbox-precaching';
+
+// Inject workbox precache manifest for PWA offline capabilities
+precacheAndRoute(self.__WB_MANIFEST);
+
 importScripts('https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js');
 importScripts('https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js');
-
 const firebaseConfig = {
   apiKey: "AIzaSyBmkBXIYgglc7ZX5x3fzIqElUcNTJXlYAU",
   authDomain: "trace-d2d17.firebaseapp.com",
