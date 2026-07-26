@@ -107,7 +107,7 @@ export function AuthProvider({ children }) {
           return;
         }
         setCurrentUser(user);
-        await syncUser(user);
+        syncUser(user); // Removed await to unblock initial UI render!
         localStorage.setItem('trace_last_active', Date.now().toString());
       } else {
         setCurrentUser(null);
