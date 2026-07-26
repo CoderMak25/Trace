@@ -5,6 +5,7 @@ import Navbar from '../components/Navbar';
 import EventCard from '../components/EventCard';
 import FilterBar from '../components/FilterBar';
 import SubmitEventModal from '../components/SubmitEventModal';
+import SkeletonEventCard from '../components/SkeletonEventCard';
 import { useEvents } from '../hooks/useEvents';
 import { useAuth } from '../context/AuthContext';
 import { daysUntil, formatDate } from '../utils/dateHelpers';
@@ -197,9 +198,15 @@ export default function Home() {
 
             {/* Events */}
             {events.length === 0 && loading ? (
-              <div className="flex justify-center py-20">
-                <div className="font-heading text-2xl tracking-tight text-ink/60 animate-pulse flex items-center gap-3">
-                  <Icon icon="solar:refresh-linear" className="animate-spin" /> Loading events...
+              <div className="mb-12">
+                <h3 className="font-heading text-2xl tracking-tight text-ink/40 mb-6 flex items-center gap-3 animate-pulse">
+                  <div className="w-8 h-8 bg-ink/10 rounded-full border-[2px] border-transparent" />
+                  Finding Events...
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <SkeletonEventCard key={i} index={i} />
+                  ))}
                 </div>
               </div>
             ) : events.length === 0 ? (
