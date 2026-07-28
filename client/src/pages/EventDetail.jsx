@@ -25,10 +25,12 @@ export default function EventDetail() {
     async function fetchEvent() {
       setLoading(true);
       try {
-        const token = await currentUser.getIdToken();
-        const res = await axios.get(`/api/events/${slug}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const headers = {};
+        if (currentUser) {
+          const token = await currentUser.getIdToken();
+          headers.Authorization = `Bearer ${token}`;
+        }
+        const res = await axios.get(`/api/events/${slug}`, { headers });
         setEvent(res.data);
       } catch (err) {
         console.error('Failed to load event:', err);
@@ -37,7 +39,7 @@ export default function EventDetail() {
         setLoading(false);
       }
     }
-    if (currentUser) fetchEvent();
+    fetchEvent();
   }, [slug, currentUser]);
 
   useEffect(() => {
