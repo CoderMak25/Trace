@@ -17,7 +17,10 @@ const globalLimiter = rateLimit({
   message: { message: 'Too many requests from this IP, please try again after 15 minutes' }
 });
 
+const helmet = require('helmet');
+
 // Middleware
+app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use('/api/', globalLimiter); // Apply to all API routes

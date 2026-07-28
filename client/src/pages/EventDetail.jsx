@@ -3,6 +3,7 @@ import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { useAuth } from '../context/AuthContext';
 import { formatDateRange, deadlineLabel, daysUntil, formatDate } from '../utils/dateHelpers';
+import { useToast } from '../context/ToastContext';
 import BookmarkButton from '../components/BookmarkButton';
 import Navbar from '../components/Navbar';
 import axios from 'axios';
@@ -11,6 +12,7 @@ export default function EventDetail() {
   const { slug } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const toast = useToast();
   const { currentUser, userProfile } = useAuth();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -86,12 +88,12 @@ export default function EventDetail() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setTeamSelectionMap((prev) => ({ ...prev, [selectedTeamId]: 'Saved' }));
-      alert('Added to team schedule.');
+      toast.success('Added to team schedule.');
       setTeamPickerOpen(false);
       setSelectedTeamId('');
     } catch (err) {
       console.error('Failed to add event to team:', err);
-      alert(err.response?.data?.message || 'Failed to add event to team');
+      toast.error(err.response?.data?.message || 'Failed to add event to team');
     } finally {
       setAddingToTeam(false);
     }
@@ -139,12 +141,16 @@ export default function EventDetail() {
 
   async function handleInterestClick(e) {
     e.preventDefault();
-    if (!currentUser) return;
+    if (!currentUser) {
+      toast.info('Please log in to save events.');
+      navigate('/login');
+      return;
+    }
 
     // Team-context behavior: first add to team, then mark interested.
     if (teamIdFromContext) {
       if (!isInContextTeamSchedule) {
-        alert('Add this event to team first.');
+        toast.error('Add this event to team first.');
         return;
       }
       if (isContextInterested) return;
@@ -170,10 +176,10 @@ export default function EventDetail() {
           })
         );
         setTeamSelectionMap((prev) => ({ ...prev, [teamIdFromContext]: 'Interested' }));
-        alert(`Marked interested for ${contextTeam?.name || 'team'}.`);
+        toast.success(`Marked interested for ${contextTeam?.name || 'team'}.`);
       } catch (err) {
         console.error('Failed to mark interested for team:', err);
-        alert(err.response?.data?.message || 'Failed to mark interested for team');
+        toast.error(err.response?.data?.message || 'Failed to mark interested for team');
       }
       return;
     }
@@ -359,8 +365,13 @@ export default function EventDetail() {
             </button>
             <button
               onClick={() => {
+                if (!currentUser) {
+                  toast.info('Please log in to add events to a team.');
+                  navigate('/login');
+                  return;
+                }
                 if (!teams.length) {
-                  alert('Join or create a team first to add events to team schedule.');
+                  toast.error('Join or create a team first to add events to team schedule.');
                   return;
                 }
                 if (allTeamsAlreadySelected) return;

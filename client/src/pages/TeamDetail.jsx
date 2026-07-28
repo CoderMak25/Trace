@@ -9,9 +9,11 @@ import { formatDate, daysUntil } from '../utils/dateHelpers';
 import axios from 'axios';
 import MiniCalendar from '../components/MiniCalendar';
 import SubmitEventModal from '../components/SubmitEventModal';
+import { useToast } from '../context/ToastContext';
 
 export default function TeamDetail() {
   const { id } = useParams();
+  const toast = useToast();
   const navigate = useNavigate();
   const { currentUser, userProfile } = useAuth();
   const { events: allEvents } = useEvents();
@@ -130,7 +132,7 @@ export default function TeamDetail() {
       setSelectedEvents((prev) => prev.filter((item) => (item.event?._id || item.event) !== eventId));
     } catch (err) {
       console.error('Failed to remove selected event:', err);
-      alert(err.response?.data?.message || 'Failed to remove selected event');
+      toast.error(err.response?.data?.message || 'Failed to remove selected event');
     }
   }
 
@@ -151,7 +153,7 @@ export default function TeamDetail() {
       );
     } catch (err) {
       console.error('Failed to mark selected event interested:', err);
-      alert(err.response?.data?.message || 'Failed to mark as interested');
+      toast.error(err.response?.data?.message || 'Failed to mark as interested');
     }
   }
 
@@ -186,10 +188,10 @@ export default function TeamDetail() {
       });
       setAnnounceText('');
       setAnnounceModalOpen(false);
-      alert(res.data?.message || 'Announcement sent!');
+      toast.success(res.data?.message || 'Announcement sent!');
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || 'Failed to send announcement');
+      toast.error(err.response?.data?.message || 'Failed to send announcement');
     } finally {
       setAnnouncing(false);
     }

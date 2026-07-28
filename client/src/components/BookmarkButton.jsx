@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -13,6 +14,7 @@ export default function BookmarkButton({ eventId }) {
   const [animating, setAnimating] = useState(false);
 
   const navigate = useNavigate();
+  const toast = useToast();
 
   async function toggleBookmark(e) {
     if (e) {
@@ -20,7 +22,7 @@ export default function BookmarkButton({ eventId }) {
       e.stopPropagation();
     }
     if (!currentUser) {
-      window.alert('Please log in to save events to your profile.');
+      toast.info('Please log in to save events to your profile.');
       navigate('/login');
       return;
     }

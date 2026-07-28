@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import axios from 'axios';
 
 const TEAM_COLORS = ['#ff4d4d', '#2d5da1', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
@@ -10,6 +11,7 @@ const TEAM_COLORS = ['#ff4d4d', '#2d5da1', '#10b981', '#f59e0b', '#8b5cf6', '#ec
 
 export default function Teams() {
   const { currentUser, userProfile } = useAuth();
+  const toast = useToast();
   const navigate = useNavigate();
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,7 +54,7 @@ export default function Teams() {
         setTab('my-teams');
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || 'Failed to create team. Ensure you are logged in properly.');
+      toast.error(err.response?.data?.message || 'Failed to create team. Ensure you are logged in properly.');
     } finally {
       setCreating(false);
     }

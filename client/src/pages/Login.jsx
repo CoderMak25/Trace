@@ -1,51 +1,20 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
-  const { googleSignIn, login, signup } = useAuth();
-  const navigate = useNavigate();
-  const [isSignup, setIsSignup] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { googleSignIn } = useAuth();
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  async function handleEmailAuth(e) {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      if (isSignup) {
-        await signup(email, password);
-      } else {
-        await login(email, password);
-      }
-
-      if ('Notification' in window && Notification.permission === 'default') {
-        try { await Notification.requestPermission(); } catch (e) {}
-      }
-
-      window.location.href = '/dashboard';
-    } catch (err) {
-      setError(err.message?.replace('Firebase: ', '') || 'Authentication failed');
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function handleGoogle() {
     setError('');
     try {
       googleSignIn();
-      // Redirect and notification prompt are now handled in AuthContext onSuccess
     } catch (err) {
       setError(err.message?.replace('Firebase: ', '') || 'Google sign-in failed');
     }
   }
-
-
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 relative">
@@ -80,10 +49,10 @@ export default function Login() {
         </div>
 
         <h1 className="font-heading text-4xl tracking-tight text-ink text-center mb-2">
-          {isSignup ? 'Join the Board' : 'Welcome Back'}
+          Welcome to Trace
         </h1>
-        <p className="text-ink/60 text-center mb-6 text-lg">
-          {isSignup ? 'Create your account to start tracking events' : 'Sign in to track your favorite events'}
+        <p className="text-ink/60 text-center mb-8 text-lg">
+          Sign in to save events, join teams, and get deadline alerts.
         </p>
 
         {error && (
@@ -95,58 +64,16 @@ export default function Login() {
         {/* Google Sign In */}
         <button
           onClick={handleGoogle}
-          className="w-full bg-white border-[3px] border-ink text-ink text-lg px-6 py-3 shadow-[4px_4px_0_0_#2d2d2d] hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all duration-100 flex items-center justify-center gap-3 mb-4 blob-2"
+          className="w-full bg-white border-[3px] border-ink text-ink text-xl font-heading tracking-tight px-6 py-4 shadow-[6px_6px_0_0_#2d2d2d] hover:-rotate-1 hover:shadow-[3px_3px_0_0_#2d2d2d] hover:translate-x-[3px] hover:translate-y-[3px] active:shadow-none active:translate-x-[6px] active:translate-y-[6px] transition-all duration-100 flex items-center justify-center gap-3 blob-2"
         >
-          <Icon icon="logos:google-icon" className="text-xl" />
+          <Icon icon="logos:google-icon" className="text-2xl" />
           Continue with Google
         </button>
 
-
-
-        {/* Divider */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="flex-1 border-t-2 border-dashed border-ink/20" />
-          <span className="text-ink/50 text-sm font-heading tracking-tight">or use email</span>
-          <div className="flex-1 border-t-2 border-dashed border-ink/20" />
-        </div>
-
-        {/* Email Form */}
-        <form onSubmit={handleEmailAuth} className="flex flex-col gap-4">
-          <input
-            type="email"
-            placeholder="Email address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full bg-white border-[3px] border-ink p-3 text-lg focus:outline-none focus:border-blue focus:ring-4 focus:ring-blue/10 shadow-[2px_2px_0_0_#2d2d2d] blob-2 placeholder:text-ink/40"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-            className="w-full bg-white border-[3px] border-ink p-3 text-lg focus:outline-none focus:border-blue focus:ring-4 focus:ring-blue/10 shadow-[2px_2px_0_0_#2d2d2d] blob-3 placeholder:text-ink/40"
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-red border-[3px] border-ink text-white text-xl font-heading tracking-tight px-6 py-3 shadow-[6px_6px_0_0_#2d2d2d] hover:-rotate-1 hover:shadow-[3px_3px_0_0_#2d2d2d] hover:translate-x-[3px] hover:translate-y-[3px] active:shadow-none active:translate-x-[6px] active:translate-y-[6px] transition-all duration-100 blob-1 disabled:opacity-60"
-          >
-            {loading ? 'Loading...' : isSignup ? 'Create Account' : 'Sign In'}
-          </button>
-        </form>
-
-        {/* Toggle */}
-        <p className="text-center mt-6 text-ink/70 text-lg">
-          {isSignup ? 'Already have an account?' : "Don't have an account?"}{' '}
-          <button
-            onClick={() => { setIsSignup(!isSignup); setError(''); }}
-            className="text-blue font-heading tracking-tight hover:underline"
-          >
-            {isSignup ? 'Sign In' : 'Sign Up'}
-          </button>
+        <p className="text-center mt-6 text-ink/40 text-sm">
+          By signing in, you agree to our{' '}
+          <Link to="/terms" className="text-blue hover:underline">Terms</Link> and{' '}
+          <Link to="/privacy" className="text-blue hover:underline">Privacy Policy</Link>.
         </p>
       </div>
 

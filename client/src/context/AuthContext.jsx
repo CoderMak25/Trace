@@ -12,6 +12,7 @@ import {
 import { auth, googleProvider, getMessagingToken } from '../firebase/firebaseConfig';
 import { requestNotificationPermission, onForegroundMessage } from '../firebase/messaging';
 import { useGoogleLogin } from '@react-oauth/google';
+import { useToast } from './ToastContext';
 import axios from 'axios';
 
 const AuthContext = createContext();
@@ -25,6 +26,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState(null);
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+  const toast = useToast();
   const navigate = useNavigate();
 
   // Store refresh token temporarily between google-auth exchange and syncUser
@@ -210,7 +212,7 @@ export function AuthProvider({ children }) {
         await axios.put('/api/users/fcm-token', { fcmToken }, { headers: { Authorization: `Bearer ${token}` } });
         setShowNotificationPrompt(false);
       } else if (permission === 'denied') {
-        alert('Push notifications are blocked by your browser. Please click the padlock icon in your address bar, switch Notifications to "Allow", and try again.');
+        toast.error('Push notifications are blocked by your browser. Please click the padlock icon in your address bar, switch Notifications to "Allow", and try again.');
         setShowNotificationPrompt(false);
       } else {
         setShowNotificationPrompt(false);
