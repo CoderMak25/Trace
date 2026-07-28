@@ -51,12 +51,6 @@ export function useEvents(teamId = null) {
   }, [filters, navigate, location.pathname, location.search]);
 
   const fetchEvents = useCallback(async (targetPage = 1) => {
-    if (!currentUser) {
-      setEvents([]);
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -71,10 +65,13 @@ export function useEvents(teamId = null) {
       params.append('page', targetPage);
       params.append('limit', 12); // Number of items per grid page
 
-      const token = await currentUser.getIdToken();
-      const res = await axios.get(`/api/events?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const headers = {};
+      if (currentUser) {
+        const token = await currentUser.getIdToken();
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const res = await axios.get(`/api/events?${params.toString()}`, { headers });
       
       if (res.data.events) {
         // ALWAYS replace for explicit pagination

@@ -42,8 +42,8 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={currentUser ? <Navigate to="/dashboard" /> : <Landing />} />
       <Route path="/login" element={currentUser ? <Navigate to="/dashboard" /> : <Login />} />
-      <Route path="/dashboard" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-      <Route path="/event/:slug" element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
+      <Route path="/dashboard" element={<Home />} />
+      <Route path="/event/:slug" element={<EventDetail />} />
       <Route path="/saved" element={<ProtectedRoute><SavedEvents /></ProtectedRoute>} />
       <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

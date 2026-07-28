@@ -131,7 +131,7 @@ export default function Landing() {
             </div>
 
             <Link
-              to={currentUser ? '/dashboard' : '/login'}
+              to="/dashboard"
               className="bg-red border-[3px] border-ink text-white text-xl md:text-2xl px-10 py-5 shadow-[6px_6px_0_0_#2d2d2d] hover:-rotate-2 hover:shadow-[3px_3px_0_0_#2d2d2d] hover:translate-x-[3px] hover:translate-y-[3px] active:shadow-none active:translate-x-[6px] active:translate-y-[6px] transition-all duration-100 flex items-center gap-3 blob-3"
             >
               <Icon icon="solar:magnifer-linear" /> Explore Events

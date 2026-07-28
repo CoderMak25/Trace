@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 export default function BookmarkButton({ eventId }) {
@@ -11,12 +12,18 @@ export default function BookmarkButton({ eventId }) {
   );
   const [animating, setAnimating] = useState(false);
 
+  const navigate = useNavigate();
+
   async function toggleBookmark(e) {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-    if (!currentUser) return;
+    if (!currentUser) {
+      window.alert('Please log in to save events to your profile.');
+      navigate('/login');
+      return;
+    }
     setAnimating(true);
     setSaved((prev) => !prev);
     setTimeout(() => setAnimating(false), 300);

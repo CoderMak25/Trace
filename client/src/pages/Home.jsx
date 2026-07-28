@@ -129,7 +129,7 @@ export default function Home() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="font-heading text-3xl md:text-4xl tracking-tight text-ink">
-              Hey, {userProfile?.displayName?.split(' ')[0] || 'there'}!{' '}
+              Hey, {userProfile?.displayName?.split(' ')[0] || 'Guest'}!{' '}
               <span className="inline-block animate-[wave_1.5s_ease-in-out_infinite] origin-[70%_70%]">👋</span>
             </h1>
             <p className="text-ink/60 text-lg mt-1">Here's what's happening in the tech community.</p>

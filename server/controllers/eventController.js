@@ -20,23 +20,22 @@ function escapeRegex(str) {
 // GET /api/events — fetch all personal and public events
 exports.getEvents = async (req, res) => {
   try {
-    const user = await User.findOne({ firebaseUID: req.user.uid }).select('_id');
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
+    const user = req.user ? await User.findOne({ firebaseUID: req.user.uid }).select('_id') : null;
+    
     const { mode, category, city, search, upcoming, source, page = 1, limit = 20 } = req.query;
     
     // Check in-memory cache first
-    const cacheKey = `events_${user._id}_${JSON.stringify(req.query)}`;
+    const cacheKey = `events_${user ? user._id : 'public'}_${JSON.stringify(req.query)}`;
     if (apiCache.has(cacheKey)) {
       return res.json(apiCache.get(cacheKey));
     }
     
-    const query = { 
+    const query = user ? { 
       $or: [
         { owner: user._id, team: null },
         { verified: true, owner: { $exists: false } }
       ]
-    };
+    } : { verified: true, owner: { $exists: false } };
 
     if (mode) {
       query.mode = { $regex: `^${escapeRegex(mode)}$`, $options: 'i' };

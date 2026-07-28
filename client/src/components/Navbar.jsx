@@ -63,7 +63,7 @@ export default function Navbar({ onSubmitClick }) {
             </Link>
             {showAddEventButton && (
               <button
-                onClick={onSubmitClick}
+                onClick={() => currentUser ? onSubmitClick() : navigate('/login')}
                 className="hidden md:flex bg-white border-[3px] border-ink text-ink text-lg px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:bg-red hover:text-white hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all duration-100 items-center gap-2 group blob-2"
               >
                 <Icon icon="solar:add-circle-linear" className="text-xl group-hover:rotate-90 transition-transform duration-300" />
@@ -118,8 +118,8 @@ export default function Navbar({ onSubmitClick }) {
               <Icon icon="solar:login-2-linear" /> Sign In
             </Link>
           )}
-          {showAddEventButton && currentUser && (
-            <button onClick={() => { setMobileOpen(false); onSubmitClick(); }} className="text-left font-heading tracking-tight flex items-center gap-2 text-blue hover:translate-x-1 transition-transform">
+          {showAddEventButton && (
+            <button onClick={() => { setMobileOpen(false); currentUser ? onSubmitClick() : navigate('/login'); }} className="text-left font-heading tracking-tight flex items-center gap-2 text-blue hover:translate-x-1 transition-transform">
               <Icon icon="solar:add-circle-linear" /> Add Event
             </button>
           )}
