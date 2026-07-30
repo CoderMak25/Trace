@@ -40,11 +40,11 @@ export default function Profile() {
 
           {/* Quick Links */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            <Link to="/saved" className="bg-yellow border-[3px] border-ink p-4 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-2 flex items-center gap-3 text-lg">
+            <Link to="/saved" className="bg-yellow border-[3px] border-ink p-4 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] interactive-press blob-2 flex items-center gap-3 text-lg">
               <Icon icon="solar:star-bold" className="text-2xl" /> Saved Events
             </Link>
             {userProfile?.role === 'admin' && (
-              <Link to="/admin" className="bg-white border-[3px] border-ink p-4 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-3 flex items-center gap-3 text-lg">
+              <Link to="/admin" className="bg-white border-[3px] border-ink p-4 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] interactive-press blob-3 flex items-center gap-3 text-lg">
                 <Icon icon="solar:shield-check-linear" className="text-2xl text-blue" /> Admin Panel
               </Link>
             )}
@@ -62,7 +62,7 @@ export default function Profile() {
           {/* Logout */}
           <button
             onClick={logout}
-            className="w-full bg-red border-[3px] border-ink text-white text-xl font-heading tracking-tight px-6 py-3 shadow-[4px_4px_0_0_#2d2d2d] hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-3 flex items-center justify-center gap-2"
+            className="w-full bg-red border-[3px] border-ink text-white text-xl font-heading tracking-tight px-6 py-3 shadow-[4px_4px_0_0_#2d2d2d] hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] interactive-press blob-3 flex items-center justify-center gap-2"
           >
             <Icon icon="solar:logout-2-linear" /> Sign Out
           </button>

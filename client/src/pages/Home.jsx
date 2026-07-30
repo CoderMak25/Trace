@@ -136,7 +136,7 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-3">
             {userProfile?.role === 'admin' && (
-              <Link to="/admin" className="bg-blue border-[3px] border-ink text-white px-4 py-2 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-2 flex items-center gap-2 text-sm">
+              <Link to="/admin" className="bg-blue border-[3px] border-ink text-white px-4 py-2 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] interactive-press blob-2 flex items-center gap-2 text-sm">
                 <Icon icon="solar:shield-check-linear" /> Admin Panel
               </Link>
             )}
@@ -242,7 +242,7 @@ export default function Home() {
                     <button
                       onClick={() => goToPage(page - 1)}
                       disabled={page === 1 || loading}
-                      className="w-10 h-10 flex items-center justify-center bg-white border-[3px] border-ink text-ink font-heading text-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-yellow hover:-translate-y-1 transition-all shadow-[2px_2px_0_0_#2d2d2d] blob-1"
+                      className="w-10 h-10 flex items-center justify-center bg-white border-[3px] border-ink text-ink font-heading text-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-yellow hover:-translate-y-1 interactive-press shadow-[2px_2px_0_0_#2d2d2d] blob-1"
                     >
                       <Icon icon="solar:alt-arrow-left-linear" />
                     </button>
@@ -261,7 +261,7 @@ export default function Home() {
                           key={p}
                           onClick={() => goToPage(p)}
                           disabled={loading}
-                          className={`w-10 h-10 flex items-center justify-center border-[3px] border-ink font-heading text-lg transition-all shadow-[2px_2px_0_0_#2d2d2d] ${page === p ? 'bg-red text-white -translate-y-1 shadow-[4px_4px_0_0_#2d2d2d]' : 'bg-white text-ink hover:bg-yellow hover:-translate-y-1'} blob-2`}
+                          className={`w-10 h-10 flex items-center justify-center border-[3px] border-ink font-heading text-lg interactive-press shadow-[2px_2px_0_0_#2d2d2d] ${page === p ? 'bg-red text-white -translate-y-1 shadow-[4px_4px_0_0_#2d2d2d]' : 'bg-white text-ink hover:bg-yellow hover:-translate-y-1'} blob-2`}
                         >
                           {p}
                         </button>
@@ -271,7 +271,7 @@ export default function Home() {
                     <button
                       onClick={() => goToPage(page + 1)}
                       disabled={page === totalPages || loading}
-                      className="w-10 h-10 flex items-center justify-center bg-white border-[3px] border-ink text-ink font-heading text-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-yellow hover:-translate-y-1 transition-all shadow-[2px_2px_0_0_#2d2d2d] blob-3"
+                      className="w-10 h-10 flex items-center justify-center bg-white border-[3px] border-ink text-ink font-heading text-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-yellow hover:-translate-y-1 interactive-press shadow-[2px_2px_0_0_#2d2d2d] blob-3"
                     >
                       <Icon icon="solar:alt-arrow-right-linear" />
                     </button>
@@ -293,7 +293,7 @@ export default function Home() {
                       <Link
                         key={event._id}
                         to={`/event/${event.slug}`}
-                        className="bg-white border-[3px] border-ink p-4 shadow-[3px_3px_0_0_#2d2d2d] flex items-center gap-4 hover:shadow-[5px_5px_0_0_#2d2d2d] hover:-translate-y-0.5 transition-all blob-1 group"
+                        className="bg-white border-[3px] border-ink p-4 shadow-[3px_3px_0_0_#2d2d2d] flex items-center gap-4 hover:shadow-[5px_5px_0_0_#2d2d2d] hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200 ease-out blob-1 group"
                       >
                         <div className={`w-12 h-12 border-2 border-ink rounded-full flex items-center justify-center shrink-0 shadow-[2px_2px_0_0_#2d2d2d] ${event.source === 'unstop' ? 'bg-yellow text-ink' : event.source === 'devfolio' ? 'bg-blue text-white' : 'bg-red text-white'}`}>
                           <Icon icon={event.source === 'unstop' ? 'solar:cup-star-linear' : event.source === 'devfolio' ? 'solar:code-linear' : 'solar:users-group-rounded-linear'} className="text-xl" />
@@ -316,7 +316,7 @@ export default function Home() {
                           {(event.owner === userProfile?._id || userProfile?.role === 'admin') && (
                             <button
                               onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditEvent(event); setModalOpen(true); }}
-                              className="bg-white border-2 border-ink p-1 text-ink/40 hover:text-blue hover:shadow-[1px_1px_0_0_#2d2d2d] transition-all blob-1 ml-2"
+                              className="bg-white border-2 border-ink p-1 text-ink/40 hover:text-blue hover:shadow-[1px_1px_0_0_#2d2d2d] interactive-press blob-1 ml-2"
                             >
                               <Icon icon="solar:pen-linear" />
                             </button>
@@ -332,7 +332,7 @@ export default function Home() {
                     <button
                       onClick={() => goToPage(page - 1)}
                       disabled={page === 1 || loading}
-                      className="w-10 h-10 flex items-center justify-center bg-white border-[3px] border-ink text-ink font-heading text-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-yellow hover:-translate-y-1 transition-all shadow-[2px_2px_0_0_#2d2d2d] blob-3"
+                      className="w-10 h-10 flex items-center justify-center bg-white border-[3px] border-ink text-ink font-heading text-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-yellow hover:-translate-y-1 interactive-press shadow-[2px_2px_0_0_#2d2d2d] blob-3"
                     >
                       <Icon icon="solar:alt-arrow-left-linear" />
                     </button>
@@ -351,7 +351,7 @@ export default function Home() {
                           key={p}
                           onClick={() => goToPage(p)}
                           disabled={loading}
-                          className={`w-10 h-10 flex items-center justify-center border-[3px] border-ink font-heading text-lg transition-all shadow-[2px_2px_0_0_#2d2d2d] ${page === p ? 'bg-red text-white -translate-y-1 shadow-[4px_4px_0_0_#2d2d2d]' : 'bg-white text-ink hover:bg-yellow hover:-translate-y-1'} blob-1`}
+                          className={`w-10 h-10 flex items-center justify-center border-[3px] border-ink font-heading text-lg interactive-press shadow-[2px_2px_0_0_#2d2d2d] ${page === p ? 'bg-red text-white -translate-y-1 shadow-[4px_4px_0_0_#2d2d2d]' : 'bg-white text-ink hover:bg-yellow hover:-translate-y-1'} blob-1`}
                         >
                           {p}
                         </button>
@@ -361,7 +361,7 @@ export default function Home() {
                     <button
                       onClick={() => goToPage(page + 1)}
                       disabled={page === totalPages || loading}
-                      className="w-10 h-10 flex items-center justify-center bg-white border-[3px] border-ink text-ink font-heading text-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-yellow hover:-translate-y-1 transition-all shadow-[2px_2px_0_0_#2d2d2d] blob-2"
+                      className="w-10 h-10 flex items-center justify-center bg-white border-[3px] border-ink text-ink font-heading text-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-yellow hover:-translate-y-1 interactive-press shadow-[2px_2px_0_0_#2d2d2d] blob-2"
                     >
                       <Icon icon="solar:alt-arrow-right-linear" />
                     </button>

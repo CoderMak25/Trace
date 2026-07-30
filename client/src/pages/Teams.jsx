@@ -105,7 +105,7 @@ export default function Teams() {
             <button
               key={t.id}
               onClick={() => { setTab(t.id); setJoinError(''); setJoinSuccess(''); }}
-              className={`font-heading text-lg tracking-tight px-5 py-2.5 border-[3px] border-ink shadow-[3px_3px_0_0_#2d2d2d] transition-all blob-2 flex items-center gap-2 whitespace-nowrap ${
+              className={`font-heading text-lg tracking-tight px-5 py-2.5 border-[3px] border-ink shadow-[3px_3px_0_0_#2d2d2d] transition-[transform,box-shadow,color,background-color] duration-150 ease-out blob-2 flex items-center gap-2 whitespace-nowrap ${
                 tab === t.id ? 'bg-ink text-white' : 'bg-white text-ink hover:bg-yellow'
               }`}
             >
@@ -125,10 +125,10 @@ export default function Teams() {
                 <h3 className="font-heading text-2xl tracking-tight text-ink/50 mb-2">No teams yet</h3>
                 <p className="text-ink/40 mb-6">Create a team or join one with a code!</p>
                 <div className="flex justify-center gap-3">
-                  <button onClick={() => setTab('create')} className="bg-red border-[3px] border-ink text-white px-5 py-2 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-1 flex items-center gap-2">
+                  <button onClick={() => setTab('create')} className="bg-red border-[3px] border-ink text-white px-5 py-2 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] interactive-press blob-1 flex items-center gap-2">
                     <Icon icon="solar:add-circle-linear" /> Create
                   </button>
-                  <button onClick={() => setTab('join')} className="bg-white border-[3px] border-ink text-ink px-5 py-2 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-2 flex items-center gap-2">
+                  <button onClick={() => setTab('join')} className="bg-white border-[3px] border-ink text-ink px-5 py-2 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] interactive-press blob-2 flex items-center gap-2">
                     <Icon icon="solar:login-2-linear" /> Join
                   </button>
                 </div>
@@ -139,7 +139,7 @@ export default function Teams() {
                   <Link
                     key={team._id}
                     to={`/teams/${team._id}`}
-                    className={`bg-white border-[3px] border-ink p-6 shadow-[4px_4px_0_0_#2d2d2d] relative group transition-all duration-200 hover:shadow-[8px_8px_0_0_#2d2d2d] hover:-translate-y-1 ${['blob-1','blob-2','blob-3'][i%3]} ${['hover:-rotate-1','hover:rotate-1','hover:-rotate-2'][i%3]}`}
+                    className={`bg-white border-[3px] border-ink p-6 shadow-[4px_4px_0_0_#2d2d2d] relative group transition-[transform,box-shadow,background-color] duration-200 ease-out hover:shadow-[8px_8px_0_0_#2d2d2d] hover:-translate-y-1 ${['blob-1','blob-2','blob-3'][i%3]} ${['hover:-rotate-1','hover:rotate-1','hover:-rotate-2'][i%3]}`}
                   >
                     {/* Color bar */}
                     <div className="absolute top-0 left-0 right-0 h-2 rounded-t-lg" style={{ backgroundColor: team.color }} />
@@ -222,7 +222,7 @@ export default function Teams() {
 
                 <button
                   type="submit" disabled={creating}
-                  className="mt-2 bg-red border-[3px] border-ink text-white text-xl font-heading tracking-tight px-6 py-3 shadow-[6px_6px_0_0_#2d2d2d] hover:-rotate-1 hover:shadow-[3px_3px_0_0_#2d2d2d] hover:translate-x-[3px] hover:translate-y-[3px] active:shadow-none active:translate-x-[6px] active:translate-y-[6px] transition-all duration-100 blob-3 disabled:opacity-60 flex items-center justify-center gap-2"
+                  className="mt-2 bg-red border-[3px] border-ink text-white text-xl font-heading tracking-tight px-6 py-3 shadow-[6px_6px_0_0_#2d2d2d] hover:-rotate-1 hover:shadow-[3px_3px_0_0_#2d2d2d] hover:translate-x-[3px] hover:translate-y-[3px] interactive-press blob-3 disabled:opacity-60 flex items-center justify-center gap-2"
                 >
                   <Icon icon="solar:add-circle-linear" /> {creating ? 'Creating...' : 'Create Team'}
                 </button>
@@ -266,7 +266,7 @@ export default function Teams() {
 
                 <button
                   type="submit"
-                  className="bg-blue border-[3px] border-ink text-white text-xl font-heading tracking-tight px-6 py-3 shadow-[6px_6px_0_0_#2d2d2d] hover:-rotate-1 hover:shadow-[3px_3px_0_0_#2d2d2d] hover:translate-x-[3px] hover:translate-y-[3px] active:shadow-none active:translate-x-[6px] active:translate-y-[6px] transition-all duration-100 blob-1 flex items-center justify-center gap-2"
+                  className="bg-blue border-[3px] border-ink text-white text-xl font-heading tracking-tight px-6 py-3 shadow-[6px_6px_0_0_#2d2d2d] hover:-rotate-1 hover:shadow-[3px_3px_0_0_#2d2d2d] hover:translate-x-[3px] hover:translate-y-[3px] interactive-press blob-1 flex items-center justify-center gap-2"
                 >
                   <Icon icon="solar:login-2-linear" /> Join Team
                 </button>

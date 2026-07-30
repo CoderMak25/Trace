@@ -57,7 +57,7 @@ export default function Landing() {
           <a href="#how" className="hidden md:block text-ink/70 hover:text-ink text-lg transition-colors">How It Works</a>
           <Link
             to={currentUser ? '/dashboard' : '/login'}
-            className="bg-red border-[3px] border-ink text-white text-lg px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all duration-100 flex items-center gap-2 blob-1"
+            className="bg-red border-[3px] border-ink text-white text-lg px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] interactive-press flex items-center gap-2 blob-1"
           >
             <Icon icon="solar:login-2-linear" className="text-xl" />
             {currentUser ? 'Dashboard' : 'Get Started'}
@@ -132,13 +132,13 @@ export default function Landing() {
 
             <Link
               to="/dashboard"
-              className="bg-red border-[3px] border-ink text-white text-xl md:text-2xl px-10 py-5 shadow-[6px_6px_0_0_#2d2d2d] hover:-rotate-2 hover:shadow-[3px_3px_0_0_#2d2d2d] hover:translate-x-[3px] hover:translate-y-[3px] active:shadow-none active:translate-x-[6px] active:translate-y-[6px] transition-all duration-100 flex items-center gap-3 blob-3"
+              className="bg-red border-[3px] border-ink text-white text-xl md:text-2xl px-10 py-5 shadow-[6px_6px_0_0_#2d2d2d] hover:-rotate-2 hover:shadow-[3px_3px_0_0_#2d2d2d] hover:translate-x-[3px] hover:translate-y-[3px] interactive-press flex items-center gap-3 blob-3"
             >
               <Icon icon="solar:magnifer-linear" /> Explore Events
             </Link>
             <Link
               to="/login"
-              className="bg-white border-[3px] border-ink border-dashed text-ink text-xl px-10 py-5 shadow-[4px_4px_0_0_#2d2d2d] hover:bg-blue hover:text-white hover:border-solid hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all duration-100 rotate-1 blob-2 flex items-center gap-2"
+              className="bg-white border-[3px] border-ink border-dashed text-ink text-xl px-10 py-5 shadow-[4px_4px_0_0_#2d2d2d] hover:bg-blue hover:text-white hover:border-solid hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] interactive-press rotate-1 blob-2 flex items-center gap-2"
             >
               <Icon icon="solar:pen-linear" /> Pin an Event
             </Link>
@@ -276,7 +276,7 @@ export default function Landing() {
           <p className="text-xl text-white/80 mb-8 max-w-lg mx-auto">Join thousands of students already using Trace to stay on top of college tech events.</p>
           <Link
             to="/login"
-            className="inline-flex items-center gap-3 bg-white border-[3px] border-ink text-ink text-xl md:text-2xl px-10 py-5 shadow-[6px_6px_0_0_#2d2d2d] hover:-rotate-2 hover:shadow-[3px_3px_0_0_#2d2d2d] hover:translate-x-[3px] hover:translate-y-[3px] active:shadow-none active:translate-x-[6px] active:translate-y-[6px] transition-all duration-100 blob-3"
+            className="inline-flex items-center gap-3 bg-white border-[3px] border-ink text-ink text-xl md:text-2xl px-10 py-5 shadow-[6px_6px_0_0_#2d2d2d] hover:-rotate-2 hover:shadow-[3px_3px_0_0_#2d2d2d] hover:translate-x-[3px] hover:translate-y-[3px] interactive-press blob-3"
           >
             <Icon icon="solar:rocket-2-linear" /> Get Started — It&apos;s Free
           </Link>

@@ -56,7 +56,7 @@ export default function Navbar({ onSubmitClick }) {
           <>
             <Link
               to="/teams"
-              className="hidden md:flex bg-yellow border-[3px] border-ink text-ink text-lg px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:bg-blue hover:text-white hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all duration-100 items-center gap-2 group blob-3"
+              className="hidden md:flex bg-yellow border-[3px] border-ink text-ink text-lg px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:bg-blue hover:text-white hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] interactive-press items-center gap-2 group blob-3"
             >
               <Icon icon="solar:users-group-rounded-linear" className="text-xl group-hover:-rotate-12 transition-transform duration-300" />
               Teams
@@ -64,7 +64,7 @@ export default function Navbar({ onSubmitClick }) {
             {showAddEventButton && (
               <button
                 onClick={() => currentUser ? onSubmitClick() : navigate('/login')}
-                className="hidden md:flex bg-white border-[3px] border-ink text-ink text-lg px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:bg-red hover:text-white hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all duration-100 items-center gap-2 group blob-2"
+                className="hidden md:flex bg-white border-[3px] border-ink text-ink text-lg px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:bg-red hover:text-white hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] interactive-press items-center gap-2 group blob-2"
               >
                 <Icon icon="solar:add-circle-linear" className="text-xl group-hover:rotate-90 transition-transform duration-300" />
                 Add Event
@@ -81,7 +81,7 @@ export default function Navbar({ onSubmitClick }) {
                   <Icon icon="solar:user-linear" className="text-xl" />
                 )}
               </button>
-              <div className="absolute right-0 top-full mt-2 bg-white border-[3px] border-ink shadow-[4px_4px_0_0_#2d2d2d] py-2 min-w-[160px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 blob-3">
+              <div className="absolute right-0 top-full mt-2 bg-white border-[3px] border-ink shadow-[4px_4px_0_0_#2d2d2d] py-2 min-w-[160px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-[opacity,visibility,transform] duration-150 ease-out origin-top-right scale-95 group-hover:scale-100 z-50 blob-3">
                 <Link to="/profile" className="block px-4 py-2 hover:bg-yellow transition-colors">Profile</Link>
                 <Link to="/saved" className="block px-4 py-2 hover:bg-yellow transition-colors">Saved Events</Link>
                 <Link to="/teams" className="block px-4 py-2 hover:bg-yellow transition-colors">Teams</Link>
@@ -94,7 +94,7 @@ export default function Navbar({ onSubmitClick }) {
         ) : (
           <Link
             to="/login"
-            className="hidden sm:flex bg-red border-[3px] border-ink text-white text-lg px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all duration-100 items-center gap-2 blob-1"
+            className="hidden sm:flex bg-red border-[3px] border-ink text-white text-lg px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] interactive-press items-center gap-2 blob-1"
           >
             <Icon icon="solar:login-2-linear" className="text-xl" />
             Sign In
@@ -130,7 +130,7 @@ export default function Navbar({ onSubmitClick }) {
             { label: 'Profile', path: '/profile' },
           ].map((item) => (
             currentUser && (
-              <button key={item.label} onClick={() => { navigate(item.path); setMobileOpen(false); }} className="text-left font-heading tracking-tight hover:text-red hover:translate-x-1 transition-all flex items-center gap-2">
+              <button key={item.label} onClick={() => { navigate(item.path); setMobileOpen(false); }} className="text-left font-heading tracking-tight hover:text-red hover:translate-x-1 transition-[transform,color] duration-150 ease-out flex items-center gap-2">
                 <Icon icon="solar:arrow-right-linear" className="text-ink/30" /> {item.label}
               </button>
             )

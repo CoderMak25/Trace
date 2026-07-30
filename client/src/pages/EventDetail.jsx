@@ -337,7 +337,7 @@ export default function EventDetail() {
                 href={event.registrationLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 bg-red border-[3px] border-ink text-white text-xl md:text-2xl font-heading tracking-tight px-6 py-4 shadow-[6px_6px_0_0_#2d2d2d] hover:-rotate-1 hover:shadow-[3px_3px_0_0_#2d2d2d] hover:translate-x-[3px] hover:translate-y-[3px] active:shadow-none active:translate-x-[6px] active:translate-y-[6px] transition-all duration-100 flex items-center justify-center gap-3 blob-3"
+                className="flex-1 bg-red border-[3px] border-ink text-white text-xl md:text-2xl font-heading tracking-tight px-6 py-4 shadow-[6px_6px_0_0_#2d2d2d] hover:-rotate-1 hover:shadow-[3px_3px_0_0_#2d2d2d] hover:translate-x-[3px] hover:translate-y-[3px] interactive-press flex items-center justify-center gap-3 blob-3"
               >
                 <Icon icon="solar:link-linear" /> Register Now
               </a>
@@ -345,7 +345,7 @@ export default function EventDetail() {
             
             <button
               onClick={handleInterestClick}
-              className={`flex-1 border-[3px] border-ink text-xl md:text-2xl font-heading tracking-tight px-6 py-4 shadow-[6px_6px_0_0_#2d2d2d] hover:rotate-1 hover:shadow-[3px_3px_0_0_#2d2d2d] hover:translate-x-[3px] hover:translate-y-[3px] active:shadow-none active:translate-x-[6px] active:translate-y-[6px] transition-all duration-100 flex items-center justify-center gap-3 ${
+              className={`flex-1 border-[3px] border-ink text-xl md:text-2xl font-heading tracking-tight px-6 py-4 shadow-[6px_6px_0_0_#2d2d2d] hover:rotate-1 hover:shadow-[3px_3px_0_0_#2d2d2d] hover:translate-x-[3px] hover:translate-y-[3px] interactive-press flex items-center justify-center gap-3 ${
                 teamIdFromContext
                   ? (isContextInterested ? 'bg-yellow blob-2' : 'bg-tan blob-1')
                   : ((userProfile?.savedEvents || []).some(e => (e._id || e) === event._id) ? 'bg-yellow blob-2' : 'bg-tan blob-1')
@@ -383,7 +383,7 @@ export default function EventDetail() {
                 setTeamPickerOpen(true);
               }}
               disabled={allTeamsAlreadySelected}
-              className="flex-1 bg-blue border-[3px] border-ink text-white text-xl md:text-2xl font-heading tracking-tight px-6 py-4 shadow-[6px_6px_0_0_#2d2d2d] hover:rotate-1 hover:shadow-[3px_3px_0_0_#2d2d2d] hover:translate-x-[3px] hover:translate-y-[3px] active:shadow-none active:translate-x-[6px] active:translate-y-[6px] transition-all duration-100 flex items-center justify-center gap-3 blob-1 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="flex-1 bg-blue border-[3px] border-ink text-white text-xl md:text-2xl font-heading tracking-tight px-6 py-4 shadow-[6px_6px_0_0_#2d2d2d] hover:rotate-1 hover:shadow-[3px_3px_0_0_#2d2d2d] hover:translate-x-[3px] hover:translate-y-[3px] interactive-press flex items-center justify-center gap-3 blob-1 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Icon icon="solar:users-group-rounded-linear" /> {allTeamsAlreadySelected ? 'In Team ✓' : 'Add To Team'}
             </button>
@@ -418,7 +418,7 @@ export default function EventDetail() {
             <button
               onClick={addToSelectedTeam}
               disabled={!selectedTeamId || addingToTeam || selectedTeamAlreadyInSchedule}
-              className="w-full bg-blue border-[3px] border-ink text-white text-lg font-heading tracking-tight px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:-translate-y-1 hover:shadow-[6px_6px_0_0_#2d2d2d] transition-all duration-100 blob-3 disabled:opacity-60"
+              className="w-full bg-blue border-[3px] border-ink text-white text-lg font-heading tracking-tight px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:-translate-y-1 hover:shadow-[6px_6px_0_0_#2d2d2d] interactive-press blob-3 disabled:opacity-60"
             >
               {selectedTeamAlreadyInSchedule ? 'Already In Team' : addingToTeam ? 'Adding...' : 'Confirm'}
             </button>

@@ -13,6 +13,11 @@
   --color-tan: #e5e0d8;
   --font-heading: 'Kalam', cursive;
   --font-body: 'Patrick Hand', cursive;
+  
+  /* Emil Kowalski Easings */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* ===== Base ===== */
@@ -44,11 +49,19 @@ body {
 
 /* ===== Fade-in ===== */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(12px) rotate(-1deg); }
-  to   { opacity: 1; transform: translateY(0) rotate(0); }
+  from { opacity: 0; transform: translateY(12px) rotate(-1deg) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
 }
 .animate-fade-in {
-  animation: fadeIn 0.4s ease-out both;
+  animation: fadeIn 250ms var(--ease-out) both;
+}
+
+/* ===== Interactive Press (Emil Kowalski) ===== */
+.interactive-press {
+  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out), background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+.interactive-press:active {
+  transform: scale(0.97);
 }
 
 /* ===== Float ===== */

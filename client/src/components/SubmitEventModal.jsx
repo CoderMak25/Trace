@@ -159,8 +159,8 @@ export default function SubmitEventModal({ isOpen, onClose, teamId = null, initi
         </div>
 
         {/* Close */}
-        <button onClick={onClose} className="absolute top-4 right-4 text-ink hover:text-red transition-colors bg-white rounded-full z-20">
-          <Icon icon="solar:close-circle-linear" className="text-3xl" />
+        <button type="button" onClick={onClose} className="absolute top-4 right-4 hover:bg-red hover:text-white border-2 border-transparent hover:border-ink rounded-full p-1 transition-colors group z-20">
+          <Icon icon="solar:close-circle-linear" className="text-3xl text-ink/40 group-hover:text-white" />
         </button>
 
         {/* Scrollable Content */}
@@ -185,6 +185,9 @@ export default function SubmitEventModal({ isOpen, onClose, teamId = null, initi
               )}
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                
+
+
                 {/* Event Name */}
                 <div className="flex flex-col gap-1">
                   <label className="font-heading text-lg tracking-tight ml-2">Event Name *</label>
@@ -368,7 +371,7 @@ export default function SubmitEventModal({ isOpen, onClose, teamId = null, initi
                 <div className="flex flex-col gap-3 mt-2">
                   <button
                     type="submit" disabled={submitting}
-                    className="bg-red border-[3px] border-ink text-white text-xl font-heading tracking-tight px-6 py-3 shadow-[6px_6px_0_0_#2d2d2d] hover:-rotate-1 hover:shadow-[3px_3px_0_0_#2d2d2d] hover:translate-x-[3px] hover:translate-y-[3px] active:shadow-none active:translate-x-[6px] active:translate-y-[6px] transition-all duration-100 blob-3 disabled:opacity-60"
+                    className="w-full bg-red border-[3px] border-ink text-white text-xl font-heading tracking-tight px-6 py-3 shadow-[6px_6px_0_0_#2d2d2d] hover:shadow-[3px_3px_0_0_#2d2d2d] hover:-translate-y-1 interactive-press blob-3 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4"
                   >
                     {submitting ? 'Saving...' : initialData ? 'Save Changes' : 'Stick it on the board!'}
                   </button>
@@ -378,7 +381,7 @@ export default function SubmitEventModal({ isOpen, onClose, teamId = null, initi
                       type="button"
                       onClick={handleDelete}
                       disabled={deleting}
-                      className="bg-white border-[3px] border-red text-red text-lg font-heading tracking-tight px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:bg-red hover:text-white hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-100 blob-1 disabled:opacity-60 flex items-center justify-center gap-2"
+                      className="bg-white border-[3px] border-red text-red text-lg font-heading tracking-tight px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:bg-red hover:text-white hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] interactive-press blob-1 disabled:opacity-60 flex items-center justify-center gap-2"
                     >
                       <Icon icon="solar:trash-bin-minimalistic-linear" />
                       {deleting ? 'Deleting...' : 'Delete Event'}

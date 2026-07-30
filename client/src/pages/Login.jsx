@@ -64,7 +64,7 @@ export default function Login() {
         {/* Google Sign In */}
         <button
           onClick={handleGoogle}
-          className="w-full bg-white border-[3px] border-ink text-ink text-xl font-heading tracking-tight px-6 py-4 shadow-[6px_6px_0_0_#2d2d2d] hover:-rotate-1 hover:shadow-[3px_3px_0_0_#2d2d2d] hover:translate-x-[3px] hover:translate-y-[3px] active:shadow-none active:translate-x-[6px] active:translate-y-[6px] transition-all duration-100 flex items-center justify-center gap-3 blob-2"
+          className="w-full bg-white border-[3px] border-ink text-ink text-xl font-heading tracking-tight px-6 py-4 shadow-[6px_6px_0_0_#2d2d2d] hover:-rotate-1 hover:shadow-[3px_3px_0_0_#2d2d2d] hover:translate-x-[3px] hover:translate-y-[3px] interactive-press flex items-center justify-center gap-3 blob-2"
         >
           <Icon icon="logos:google-icon" className="text-2xl" />
           Continue with Google

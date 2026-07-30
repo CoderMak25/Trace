@@ -76,7 +76,7 @@ export default function FilterBar({ filters, setFilters }) {
           <button
             key={plat.label}
             onClick={() => setFilters(prev => ({ ...prev, source: plat.value }))}
-            className={`whitespace-nowrap border-2 px-4 py-1 transition-all ${
+            className={`whitespace-nowrap border-2 px-4 py-1 transition-[transform,box-shadow,background-color,color] duration-150 ease-out ${
               filters.source === plat.value
                 ? 'bg-ink text-white border-ink shadow-[2px_2px_0_0_#2d2d2d] -translate-y-0.5'
                 : 'bg-white border-dashed border-ink text-ink hover:bg-tan'

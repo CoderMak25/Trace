@@ -72,7 +72,7 @@ export default function AdminPanel() {
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`font-heading text-xl tracking-tight px-6 py-2 border-[3px] border-ink shadow-[3px_3px_0_0_#2d2d2d] transition-all blob-2 capitalize ${
+              className={`font-heading text-xl tracking-tight px-6 py-2 border-[3px] border-ink shadow-[3px_3px_0_0_#2d2d2d] interactive-press blob-2 capitalize ${
                 tab === t ? 'bg-red text-white' : 'bg-white text-ink hover:bg-yellow'
               }`}
             >
@@ -105,13 +105,13 @@ export default function AdminPanel() {
                   <div className="flex gap-3">
                     <button
                       onClick={() => handleAction(sub._id, 'approve')}
-                      className="bg-green-500 border-[3px] border-ink text-white px-4 py-2 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-2 flex items-center gap-1"
+                      className="bg-green-500 border-[3px] border-ink text-white px-4 py-2 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] interactive-press blob-2 flex items-center gap-1"
                     >
                       <Icon icon="solar:check-circle-linear" /> Approve
                     </button>
                     <button
                       onClick={() => handleAction(sub._id, 'reject')}
-                      className="bg-red border-[3px] border-ink text-white px-4 py-2 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-3 flex items-center gap-1"
+                      className="bg-red border-[3px] border-ink text-white px-4 py-2 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] interactive-press blob-3 flex items-center gap-1"
                     >
                       <Icon icon="solar:close-circle-linear" /> Reject
                     </button>
@@ -136,7 +136,7 @@ export default function AdminPanel() {
                 rows="3"
                 className="w-full bg-white border-[3px] border-ink p-3 text-lg focus:outline-none focus:border-blue shadow-[2px_2px_0_0_#2d2d2d] blob-3"
               />
-              <button className="bg-blue border-[3px] border-ink text-white text-xl font-heading tracking-tight px-6 py-3 shadow-[4px_4px_0_0_#2d2d2d] hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-1 flex items-center gap-2 w-fit">
+              <button className="bg-blue border-[3px] border-ink text-white text-xl font-heading tracking-tight px-6 py-3 shadow-[4px_4px_0_0_#2d2d2d] hover:shadow-[2px_2px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] interactive-press blob-1 flex items-center gap-2 w-fit">
                 <Icon icon="solar:bell-linear" /> Send to All Users
               </button>
             </div>

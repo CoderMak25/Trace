@@ -83,7 +83,7 @@ export default function BookmarkButton({ eventId }) {
     <div className="flex items-center gap-1.5">
       <button
         onClick={toggleBookmark}
-        className={`transition-all duration-200 ${animating ? 'scale-125' : ''} ${
+        className={`transition-[transform,color] duration-200 ease-out ${animating ? 'scale-125' : ''} ${
           saved
             ? 'text-yellow drop-shadow-[1px_1px_0_#2d2d2d] hover:scale-110'
             : 'text-ink/40 hover:text-yellow hover:drop-shadow-[1px_1px_0_#2d2d2d]'
@@ -98,7 +98,7 @@ export default function BookmarkButton({ eventId }) {
       {saved && (
         <button
           onClick={toggleRegistered}
-          className={`transition-all duration-200 text-xs font-heading px-2 py-1 border-2 rounded-full ${
+          className={`transition-[transform,background-color,border-color,color] duration-200 ease-out text-xs font-heading px-2 py-1 border-2 rounded-full ${
             registered
               ? 'bg-green-500 text-white border-green-600 hover:bg-green-600'
               : 'bg-white text-ink/50 border-ink/20 hover:border-green-400 hover:text-green-600'

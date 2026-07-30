@@ -16,7 +16,7 @@ export default function NotificationBanner() {
         </div>
       </div>
       <div className="flex gap-3 shrink-0 mt-2 md:mt-0">
-        <button onClick={requestNotificationPermission} className="bg-yellow text-ink border-[3px] border-ink font-heading text-lg px-6 py-2 shadow-[3px_3px_0_0_#fff] hover:-translate-y-1 hover:shadow-[5px_5px_0_0_#fff] transition-all whitespace-nowrap">
+        <button onClick={requestNotificationPermission} className="bg-yellow text-ink border-[3px] border-ink font-heading text-lg px-6 py-2 shadow-[3px_3px_0_0_#fff] hover:-translate-y-1 hover:shadow-[5px_5px_0_0_#fff] interactive-press whitespace-nowrap">
           Allow Notifications
         </button>
         <button onClick={() => setShowNotificationPrompt(false)} className="bg-transparent text-white/60 font-heading text-lg px-4 py-2 hover:text-white transition-colors border-2 border-transparent whitespace-nowrap">

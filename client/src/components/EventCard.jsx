@@ -28,7 +28,7 @@ export default function EventCard({ event, index = 0, canEdit = false, onEdit })
   return (
     <Link
       to={`/event/${event.slug}`}
-      className={`${cardBg} border-[3px] border-ink p-6 flex flex-col gap-4 shadow-[4px_4px_0_0_#2d2d2d] relative group transition-all duration-200 ${hoverClass} hover:shadow-[8px_8px_0_0_#2d2d2d] hover:-translate-y-1 ${blobClass} text-left`}
+      className={`${cardBg} border-[3px] border-ink p-6 flex flex-col gap-4 shadow-[4px_4px_0_0_#2d2d2d] relative group transition-[transform,box-shadow,background-color] duration-200 ease-out ${hoverClass} hover:shadow-[8px_8px_0_0_#2d2d2d] hover:-translate-y-1 ${blobClass} text-left`}
     >
       {/* Tape / Pin Decoration */}
       {index % 2 === 0 ? (

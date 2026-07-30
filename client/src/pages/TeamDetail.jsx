@@ -291,7 +291,7 @@ export default function TeamDetail() {
               {/* Share Code */}
               <button
                 onClick={() => setShowCode(!showCode)}
-                className="bg-yellow border-[3px] border-ink px-4 py-2 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-2 flex items-center gap-2 font-heading text-sm"
+                className="bg-yellow border-[3px] border-ink px-4 py-2 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] interactive-press blob-2 flex items-center gap-2 font-heading text-sm"
               >
                 <Icon icon="solar:share-linear" /> Share Code
               </button>
@@ -299,7 +299,7 @@ export default function TeamDetail() {
               {(team.owner?.email === currentUser?.email || team.owner?._id === userProfile?._id || team.owner === userProfile?._id) && (
                 <button
                   onClick={() => setAnnounceModalOpen(true)}
-                  className="bg-blue border-[3px] border-ink text-white px-4 py-2 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-3 flex items-center gap-2 font-heading text-sm"
+                  className="bg-blue border-[3px] border-ink text-white px-4 py-2 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] interactive-press blob-3 flex items-center gap-2 font-heading text-sm"
                 >
                   <Icon icon="solar:bell-bing-bold" /> Announce
                 </button>
@@ -307,14 +307,14 @@ export default function TeamDetail() {
               {/* Add Event */}
               <button
                 onClick={() => setModalOpen(true)}
-                className="bg-red border-[3px] border-ink text-white px-4 py-2 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-1 flex items-center gap-2 font-heading text-sm"
+                className="bg-red border-[3px] border-ink text-white px-4 py-2 shadow-[3px_3px_0_0_#2d2d2d] hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] interactive-press blob-1 flex items-center gap-2 font-heading text-sm"
               >
                 <Icon icon="solar:add-circle-linear" /> Add Event
               </button>
               {/* Leave */}
               <button
                 onClick={handleLeave}
-                className="bg-white border-[3px] border-ink text-red px-4 py-2 shadow-[3px_3px_0_0_#2d2d2d] hover:bg-red hover:text-white hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-3 flex items-center gap-2 font-heading text-sm"
+                className="bg-white border-[3px] border-ink text-red px-4 py-2 shadow-[3px_3px_0_0_#2d2d2d] hover:bg-red hover:text-white hover:shadow-[1px_1px_0_0_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] interactive-press blob-3 flex items-center gap-2 font-heading text-sm"
               >
                 <Icon icon="solar:logout-2-linear" /> Leave
               </button>
@@ -331,7 +331,7 @@ export default function TeamDetail() {
                 </div>
                 <button
                   onClick={copyCode}
-                  className={`border-[3px] border-ink px-4 py-3 shadow-[2px_2px_0_0_#2d2d2d] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-1 flex justify-center items-center gap-2 shrink-0 ${copied ? 'bg-green-500 text-white' : 'bg-white'}`}
+                  className={`border-[3px] border-ink px-4 py-3 shadow-[2px_2px_0_0_#2d2d2d] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] interactive-press blob-1 flex justify-center items-center gap-2 shrink-0 ${copied ? 'bg-green-500 text-white' : 'bg-white'}`}
                 >
                   <Icon icon={copied ? 'solar:check-circle-bold' : 'solar:copy-linear'} />
                   {copied ? 'Copied!' : 'Copy'}
@@ -438,7 +438,7 @@ export default function TeamDetail() {
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
                         <button
                           onClick={() => markSelectedEventInterested(item.event._id)}
-                          className="bg-blue border-[2px] border-ink text-white px-3 py-1.5 text-sm font-heading shadow-[2px_2px_0_0_#2d2d2d] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all blob-1 whitespace-nowrap"
+                          className="bg-blue border-[2px] border-ink text-white px-3 py-1.5 text-sm font-heading shadow-[2px_2px_0_0_#2d2d2d] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] interactive-press blob-1 whitespace-nowrap"
                         >
                           Mark Interested
                         </button>
@@ -521,7 +521,7 @@ export default function TeamDetail() {
               />
               <button
                 type="submit" disabled={announcing}
-                className="bg-blue border-[3px] border-ink text-white text-lg font-heading tracking-tight px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:-translate-y-1 hover:shadow-[6px_6px_0_0_#2d2d2d] transition-all duration-100 blob-3 disabled:opacity-60"
+                className="bg-blue border-[3px] border-ink text-white text-lg font-heading tracking-tight px-6 py-2 shadow-[4px_4px_0_0_#2d2d2d] hover:-translate-y-1 hover:shadow-[6px_6px_0_0_#2d2d2d] interactive-press blob-3 disabled:opacity-60"
               >
                 {announcing ? 'Sending...' : 'Send Push'}
               </button>

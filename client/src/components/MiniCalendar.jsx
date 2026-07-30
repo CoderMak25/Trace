@@ -172,7 +172,7 @@ export default function MiniCalendar({ events, title = 'Calendar' }) {
               <div
                 key={day}
                 onClick={() => hasEvent && setSelectedDay(isSelected ? null : day)}
-                className={`relative rounded-lg transition-all cursor-default py-1.5 text-sm
+                className={`relative rounded-lg transition-colors cursor-default py-1.5 text-sm
                   ${isToday && !isSelected ? 'bg-red text-white font-bold' : ''}
                   ${isSelected ? 'bg-blue text-white font-bold ring-2 ring-blue/30' : ''}
                   ${hasEvent && !isToday && !isSelected ? 'bg-yellow/60 font-bold cursor-pointer hover:ring-2 hover:ring-ink/20' : ''}
@@ -308,7 +308,7 @@ export default function MiniCalendar({ events, title = 'Calendar' }) {
                 <div
                   key={day}
                   onClick={() => hasEvent && setSelectedDay(isSelected ? null : day)}
-                  className={`relative rounded-lg transition-all min-h-[60px] md:min-h-[80px] p-2 text-left border-2
+                  className={`relative rounded-lg transition-colors min-h-[60px] md:min-h-[80px] p-2 text-left border-2
                     ${isToday && !isSelected ? 'bg-red/10 border-red font-bold' : ''}
                     ${isSelected ? 'bg-blue/10 border-blue font-bold ring-2 ring-blue/30' : ''}
                     ${hasEvent && !isToday && !isSelected ? 'bg-yellow/30 border-ink/20 cursor-pointer hover:border-ink/40' : ''}
