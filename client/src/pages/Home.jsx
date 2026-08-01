@@ -45,7 +45,13 @@ export default function Home() {
   const { currentUser, userProfile } = useAuth();
   const [modalOpen, setModalOpen] = useState(false);
   const [editEvent, setEditEvent] = useState(null);
-  const [viewMode, setViewMode] = useState('grid'); // grid | list
+  const [viewMode, setViewMode] = useState(() => {
+    return localStorage.getItem('trace_view_mode') || 'grid';
+  }); // grid | list
+
+  useEffect(() => {
+    localStorage.setItem('trace_view_mode', viewMode);
+  }, [viewMode]);
   const [teamEvents, setTeamEvents] = useState([]);
 
   // Fetch all team events to merge into the dashboard calendar
