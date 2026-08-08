@@ -448,7 +448,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="w-full mt-12 pt-8 pb-6 text-center px-6 border-t-[3px] border-dashed border-ink/10">
         <p className="text-sm text-ink/40 flex items-center justify-center gap-2">
-          <Icon icon="solar:pen-linear" /> Trace — Built with <Icon icon="solar:heart-linear" className="text-red" /> by camelCase Studio
+          <Icon icon="solar:pen-linear" /> Trace — Built with <Icon icon="solar:heart-linear" className="text-red" /> by Mayank
         </p>
       </footer>
 

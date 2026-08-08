@@ -307,7 +307,7 @@ export default function Landing() {
             ))}
           </div>
           <p className="text-sm text-ink/50 flex items-center gap-2">
-            Built with <Icon icon="solar:heart-linear" className="text-red" /> by camelCase Studio
+            Built with <Icon icon="solar:heart-linear" className="text-red" /> by Mayank
           </p>
         </div>
       </footer>
